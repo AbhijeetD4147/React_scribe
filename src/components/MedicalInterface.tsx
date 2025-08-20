@@ -7,7 +7,7 @@ export function MedicalInterface() {
   const [selectedPatientId, setSelectedPatientId] = useState<string>("1");
 
   return (
-    <div className="h-screen bg-background flex">
+    <div className="h-screen bg-background flex overflow-hidden">
       <PatientListSidebar 
         selectedPatientId={selectedPatientId}
         onPatientSelect={setSelectedPatientId}

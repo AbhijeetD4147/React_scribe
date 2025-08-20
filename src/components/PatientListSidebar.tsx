@@ -37,20 +37,20 @@ export function PatientListSidebar({ selectedPatientId, onPatientSelect }: Patie
   return (
     <div className="w-64 bg-sidebar border-r border-sidebar-border flex flex-col h-full">
       {/* Header */}
-      <div className="p-3 border-b border-sidebar-border">
+      <div className="h-[88px] p-3 border-b border-sidebar-border flex flex-col justify-center">
         <div className="flex items-center gap-2 mb-3">
           <CalendarIcon className="w-4 h-4 text-medical-blue" />
-          <span className="text-sm text-medical-text-primary">08/13/2025 - 08/19</span>
+          <span className="text-sm font-medium text-medical-text-primary">08/13/2025 - 08/19</span>
           <CalendarIcon className="w-4 h-4 text-medical-text-secondary ml-auto" />
         </div>
         <div className="relative">
           <SearchIcon className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-medical-text-secondary" />
-          <Input placeholder="Search..." className="pl-10 h-8 text-sm" />
+          <Input placeholder="Search patients..." className="pl-10 h-8 text-sm transition-all duration-200 hover:border-medical-blue focus:border-medical-blue" />
         </div>
       </div>
 
       {/* Patient List */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 h-0">
         <div className="p-2">
           {patientEntries.map((patient) => (
             <div

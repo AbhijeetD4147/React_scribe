@@ -5,30 +5,30 @@ import { ChevronRightIcon, FileTextIcon, PrinterIcon } from "lucide-react";
 
 export function MedicalRecordView() {
   return (
-    <div className="flex-1 bg-white">
+    <div className="flex-1 bg-white flex flex-col h-full">
       {/* Header */}
-      <div className="border-b border-border p-4">
+      <div className="h-[88px] border-b border-border p-4 flex flex-col justify-center">
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-3">
             <h1 className="text-lg font-semibold text-medical-text-primary">
               Manish 813 | 1/14/1960
             </h1>
-            <Badge variant="secondary" className="bg-medical-green text-white text-xs">
+            <Badge variant="secondary" className="bg-medical-green text-white text-xs px-2 py-1 animate-fade-in">
               ✓ Finalized
             </Badge>
           </div>
           
-          <Button variant="outline" size="sm" className="mx-4">
+          <Button variant="outline" size="sm" className="mx-4 hover-scale transition-all duration-200 hover:border-medical-blue">
             <FileTextIcon className="w-4 h-4 mr-1" />
             Copy
           </Button>
           
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hover-scale transition-all duration-200 hover:border-medical-blue">
               <PrinterIcon className="w-4 h-4 mr-1" />
               Print
             </Button>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" className="hover-scale transition-all duration-200 hover:border-medical-blue">
               <FileTextIcon className="w-4 h-4 mr-1" />
               Export
             </Button>
@@ -40,7 +40,7 @@ export function MedicalRecordView() {
       </div>
 
       {/* Content */}
-      <ScrollArea className="flex-1">
+      <ScrollArea className="flex-1 h-0">
         <div className="p-6 space-y-6">
           {/* Chief Complaint */}
           <div className="space-y-3">

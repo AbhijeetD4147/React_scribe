@@ -21,27 +21,27 @@ export function AudioTranscriptPanel() {
   return (
     <div className="w-80 bg-white border-l border-border flex flex-col h-full">
       {/* Header */}
-      <div className="p-4 border-b border-border">
+      <div className="h-[88px] p-4 border-b border-border flex flex-col justify-center">
         <div className="flex items-center justify-between mb-2">
           <h3 className="font-semibold text-medical-text-primary">Pt: Manish 813</h3>
           <span className="text-sm text-medical-text-secondary">08/13/2025</span>
         </div>
         <div className="flex items-center gap-2">
           <Checkbox id="patient-consent" />
-          <label htmlFor="patient-consent" className="text-sm text-medical-text-primary">
+          <label htmlFor="patient-consent" className="text-sm text-medical-text-primary cursor-pointer hover:text-medical-blue transition-colors duration-200">
             Patient Consent received?
           </label>
         </div>
       </div>
 
       {/* Audio Player */}
-      <div className="p-4 border-b border-border">
+      <div className="p-4 border-b border-border bg-gradient-to-r from-medical-gray-light/30 to-transparent">
         <div className="flex items-center gap-3 mb-3">
           <Button
             size="sm"
             variant="outline"
             onClick={() => setIsPlaying(!isPlaying)}
-            className="w-8 h-8 p-0"
+            className="w-8 h-8 p-0 hover-scale transition-all duration-200 hover:border-medical-blue hover:bg-medical-blue/10"
           >
             {isPlaying ? (
               <PauseIcon className="w-4 h-4" />
@@ -50,7 +50,7 @@ export function AudioTranscriptPanel() {
             )}
           </Button>
           <div className="flex-1">
-            <div className="text-xs text-medical-text-secondary mb-1">
+            <div className="text-xs text-medical-text-secondary mb-1 font-medium">
               {Math.floor(currentTime)}:{(currentTime % 1 * 60).toFixed(0).padStart(2, '0')} / 29:52
             </div>
             <Slider
@@ -61,39 +61,39 @@ export function AudioTranscriptPanel() {
               className="w-full"
             />
           </div>
-          <Button size="sm" variant="outline" className="w-8 h-8 p-0">
+          <Button size="sm" variant="outline" className="w-8 h-8 p-0 hover-scale transition-all duration-200 hover:border-medical-blue">
             <VolumeXIcon className="w-3 h-3" />
           </Button>
-          <Button size="sm" variant="outline" className="w-8 h-8 p-0">
+          <Button size="sm" variant="outline" className="w-8 h-8 p-0 hover-scale transition-all duration-200 hover:border-medical-blue">
             <MoreVerticalIcon className="w-3 h-3" />
           </Button>
         </div>
         <div className="flex items-center gap-2">
-          <Button size="sm" variant="outline" className="flex-1">
+          <Button size="sm" variant="outline" className="flex-1 hover-scale transition-all duration-200 hover:border-medical-blue">
             <RefreshCwIcon className="w-3 h-3 mr-2" />
             Sync
           </Button>
-          <Button size="sm" variant="outline" className="flex-1">
+          <Button size="sm" variant="outline" className="flex-1 hover-scale transition-all duration-200 hover:border-medical-blue">
             <UndoIcon className="w-3 h-3 mr-2" />
             Undo
           </Button>
-          <Button size="sm" variant="outline" className="w-8 h-8 p-0">
+          <Button size="sm" variant="outline" className="w-8 h-8 p-0 hover-scale transition-all duration-200 hover:border-medical-blue">
             <DownloadIcon className="w-3 h-3" />
           </Button>
         </div>
       </div>
 
       {/* Transcript */}
-      <div className="flex-1">
+      <div className="flex-1 h-0">
         <ScrollArea className="h-full">
           <div className="p-4">
             {transcriptData.map((entry, index) => (
-              <div key={index} className="mb-4">
+              <div key={index} className="mb-4 animate-fade-in hover:bg-medical-gray-light/20 rounded-lg p-3 transition-all duration-200 cursor-pointer">
                 <div className="flex items-center gap-2 mb-2">
                   <span className="font-medium text-medical-blue text-sm">
                     {entry.speaker}:
                   </span>
-                  <span className="text-xs text-medical-text-secondary">
+                  <span className="text-xs text-medical-text-secondary bg-medical-gray-light/50 px-2 py-1 rounded">
                     {entry.time}
                   </span>
                 </div>
