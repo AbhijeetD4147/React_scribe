@@ -8,15 +8,21 @@ export function MedicalRecordView() {
     <div className="flex-1 bg-white">
       {/* Header */}
       <div className="border-b border-border p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-4">
-            <h1 className="text-xl font-semibold text-medical-text-primary">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <h1 className="text-lg font-semibold text-medical-text-primary">
               Manish 813 | 1/14/1960
             </h1>
-            <Badge variant="secondary" className="bg-medical-green text-white">
+            <Badge variant="secondary" className="bg-medical-green text-white text-xs">
               ✓ Finalized
             </Badge>
           </div>
+          
+          <Button variant="outline" size="sm" className="mx-4">
+            <FileTextIcon className="w-4 h-4 mr-1" />
+            Copy
+          </Button>
+          
           <div className="flex items-center gap-2">
             <Button variant="outline" size="sm">
               <PrinterIcon className="w-4 h-4 mr-1" />
@@ -27,9 +33,6 @@ export function MedicalRecordView() {
               Export
             </Button>
           </div>
-        </div>
-        <div className="text-sm text-medical-text-secondary">
-          Pt ID:100274 | Enc ID:100225 | Prov: John Wick
         </div>
       </div>
 
