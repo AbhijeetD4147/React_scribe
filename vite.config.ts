@@ -8,6 +8,17 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
+    proxy: {
+      '/api': {
+        target: 'https://ioqa.maximeyes.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
+      },
+      '/e1': {
+        target: 'https://aiscribeqa.maximeyes.com',
+        changeOrigin: true,
+      },
+    },
   },
   plugins: [
     react(),
