@@ -6,7 +6,11 @@ import { AudioTranscriptPanel } from "./AudioTranscriptPanel";
 import { getDictation } from "../services/getDictation_ExecStoredProcedure";
 import { getSoapNotes } from "../services/getSoapNotes_ExecStoredProcedure";
 
-export function MedicalInterface() {
+interface MedicalInterfaceProps {
+  liveTranscription?: string;
+}
+
+export function MedicalInterface({ liveTranscription = "" }: MedicalInterfaceProps) {
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
   const [isRightPanelCollapsed, setIsRightPanelCollapsed] = useState(false);
@@ -53,22 +57,27 @@ export function MedicalInterface() {
       </div>
       <div className="flex flex-1 bg-plum-900 gap-2 p-2 rounded-b-lg">
         <PatientListSidebar
-          selectedPatient={selectedPatient}
-          onPatientSelect={setSelectedPatient}
-          onToggleCollapse={toggleSidebar}
           isCollapsed={isSidebarCollapsed}
-          refreshList={refreshList}
-        />
-        <MedicalRecordView
-          soapNotes={soapNotes}
+          onToggleCollapse={toggleSidebar}
+          onSelectPatient={setSelectedPatient}
           selectedPatient={selectedPatient}
-          onStatusChange={() => setRefreshList(prev => !prev)}
+          refreshList={refreshList}
+          setRefreshList={setRefreshList}
         />
+        
+        <MedicalRecordView
+          selectedPatient={selectedPatient}
+          soapNotes={soapNotes}
+          setSoapNotes={setSoapNotes}
+          setRefreshList={setRefreshList}
+        />
+        
         <AudioTranscriptPanel
           dictation={dictation}
           selectedPatient={selectedPatient}
           isCollapsed={isRightPanelCollapsed}
           onToggleCollapse={toggleRightPanel}
+          liveTranscription={liveTranscription}
         />
       </div>
     </div>

@@ -15,6 +15,8 @@ interface MedicalRecordViewProps {
   soapNotes: any;
   selectedPatient: any;
   onStatusChange?: () => void;
+  setSoapNotes?: React.Dispatch<any>;
+  setRefreshList?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 const highlightText = (text: string, highlight: string) => {

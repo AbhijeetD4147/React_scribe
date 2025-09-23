@@ -25,9 +25,19 @@ interface PatientListSidebarProps {
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
   refreshList?: boolean;
+  setRefreshList?: React.Dispatch<React.SetStateAction<boolean>>;
+  onSelectPatient?: (patient: Patient) => void;
 }
 
-export function PatientListSidebar({ selectedPatient, onPatientSelect, isCollapsed, onToggleCollapse, refreshList }: PatientListSidebarProps) {
+export function PatientListSidebar({ 
+  selectedPatient, 
+  onPatientSelect, 
+  isCollapsed, 
+  onToggleCollapse, 
+  refreshList,
+  setRefreshList,
+  onSelectPatient 
+}: PatientListSidebarProps) {
   const [date, setDate] = useState<DateRange | undefined>({
     from: subDays(new Date(), 6),
     to: new Date(),
@@ -38,6 +48,7 @@ export function PatientListSidebar({ selectedPatient, onPatientSelect, isCollaps
   const [isLoading, setIsLoading] = useState(true);
   const [isInitialLoad, setIsInitialLoad] = useState(true);
 
+  // In the useEffect where patients are fetched
   useEffect(() => {
     const fetchPatients = async () => {
       if (date?.from && date?.to) {
@@ -51,16 +62,21 @@ export function PatientListSidebar({ selectedPatient, onPatientSelect, isCollaps
           const patientData = data.Table;
           setPatients(patientData);
           if (!selectedPatient && patientData.length > 0) {
-            onPatientSelect?.(patientData[0]);
+            // Use onSelectPatient if available, otherwise fall back to onPatientSelect
+            if (onSelectPatient) {
+              onSelectPatient(patientData[0]);
+            } else if (onPatientSelect) {
+              onPatientSelect(patientData[0]);
+            }
           }
         }
         setIsLoading(false);
         setIsInitialLoad(false);
       }
     };
-
+  
     fetchPatients();
-  }, [date, refreshList, selectedPatient, onPatientSelect]);
+  }, [date, refreshList, selectedPatient, onPatientSelect, onSelectPatient]);
 
   const handlePresetClick = (preset: string, range: DateRange) => {
     setDate(range);
@@ -131,11 +147,19 @@ export function PatientListSidebar({ selectedPatient, onPatientSelect, isCollaps
                 <div className="p-4 text-center">Loading...</div>
               ) : (
                 patients.map((patient) => (
+                  // In the patient list rendering
                   <div
                     key={patient.RECORDING_ID}
                     className={`flex items-center justify-between p-3 rounded-lg cursor-pointer ${selectedPatient?.RECORDING_ID === patient.RECORDING_ID ? 'bg-white shadow-md' : 'hover:bg-white/60'}`}
                     style={{ borderLeft: selectedPatient?.RECORDING_ID === patient.RECORDING_ID ? '4px solid #9D4EDD' : '4px solid transparent' }}
-                    onClick={() => onPatientSelect?.(patient)}
+                    onClick={() => {
+                      // Use onSelectPatient if available, otherwise fall back to onPatientSelect
+                      if (onSelectPatient) {
+                        onSelectPatient(patient);
+                      } else if (onPatientSelect) {
+                        onPatientSelect(patient);
+                      }
+                    }}
                   >
                     <div>
                       <div className="font-semibold text-sm text-gray-800">{patient.PATIENT_NAME}</div>

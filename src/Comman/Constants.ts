@@ -1,1 +1,1 @@
-export const Auth_Api = 'https://ioqa.maximeyes.com';
+export const Auth_Api = 'https://ioqadt.maximeyes.com';

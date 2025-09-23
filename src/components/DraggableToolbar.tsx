@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { MedicalInterface } from "./MedicalInterface";
 import { toast } from "@/components/ui/sonner";
 import { uploadAudioFile } from "@/services/audioUploadApi";
+import { startTranscription, stopTranscription } from "@/services/transcriptionWebSocket";
 
 interface Position {
   x: number;
@@ -22,8 +23,12 @@ export function DraggableToolbar() {
   const [recordingTime, setRecordingTime] = useState(0);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  // Add file input reference
   const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Add state for live transcription
+  const [liveTranscription, setLiveTranscription] = useState("");
+  
+  const [transcriptionText, setTranscriptionText] = useState("");
   
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isAnimating) return; // Don't allow dragging when animating
@@ -113,28 +118,51 @@ export function DraggableToolbar() {
     }
   };
   
-  const handleRecordingToggle = () => {
-    setIsRecording(!isRecording);
-    
+  const handleRecordingToggle = async () => {
     if (!isRecording) {
-      console.log("Starting recording...");
-      // Start the timer
-      setRecordingTime(0);
-      setIsPaused(false);
-      recordingIntervalRef.current = setInterval(() => {
-        setRecordingTime(prev => prev + 1);
-      }, 1000);
-      // Add your recording start logic here
+      try {
+        // Start transcription
+        const started = await startTranscription((text) => {
+          // Update transcription text
+          setLiveTranscription(prev => prev + text + " ");
+        });
+        
+        if (started) {
+          // Start the timer
+          setRecordingTime(0);
+          setIsPaused(false);
+          recordingIntervalRef.current = setInterval(() => {
+            setRecordingTime(prev => prev + 1);
+          }, 1000);
+          
+          setIsRecording(true);
+          toast.success("Recording started");
+          
+          // Ensure the interface is expanded to show transcription
+          if (!isExpanded) {
+            handleExpandToggle();
+          }
+        } else {
+          toast.error("Failed to start recording");
+        }
+      } catch (error) {
+        console.error("Error starting recording:", error);
+        toast.error("Could not access microphone. Please check permissions.");
+      }
     } else {
-      console.log("Stopping recording...");
+      // Stop transcription
+      stopTranscription();
+      
       // Stop the timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
+      
       setRecordingTime(0);
       setIsPaused(false);
-      // Add your recording stop logic here
+      setIsRecording(false);
+      toast.info("Recording stopped");
     }
   };
   
@@ -144,36 +172,44 @@ export function DraggableToolbar() {
     setIsPaused(!isPaused);
     
     if (!isPaused) {
-      console.log("Pausing recording...");
+      // Pause recording
+      // if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
+      //   mediaRecorderRef.current.pause();
+      // }
+      
       // Pause the timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      // Add your recording pause logic here
+      
+      console.log("Recording paused");
+      toast.info("Recording paused");
     } else {
-      console.log("Resuming recording...");
+      // Resume recording
+      // if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
+      //   mediaRecorderRef.current.resume();
+      // }
+      
       // Resume the timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
-      // Add your recording resume logic here
+      
+      console.log("Recording resumed");
+      toast.info("Recording resumed");
     }
   };
   
-  // Format time as MM:SS
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
-  };
-  
-  // Cleanup interval on unmount
+  // Clean up resources when component unmounts
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
+      
+      // Stop transcription
+      stopTranscription();
     };
   }, []);
   {/* Add file input reference */}
@@ -272,7 +308,7 @@ export function DraggableToolbar() {
         <div className={`h-full w-full bg-white border-2 border-primary/40 rounded-lg shadow-2xl transition-all duration-300 ease-in-out overflow-hidden ${
           isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
         }`}>
-          <MedicalInterface />
+          <MedicalInterface liveTranscription={liveTranscription} />
         </div>
       </div>
   
@@ -368,7 +404,7 @@ export function DraggableToolbar() {
                 ? 'text-orange-700 bg-orange-50 border-orange-300'
                 : 'text-red-700 bg-red-50 border-red-300'
             }`}>
-              {formatTime(recordingTime)}
+              {new Date(recordingTime * 1000).toISOString().substr(11, 8)}
               {isPaused && (
                 <div className="text-[10px] text-orange-600 mt-0.5 font-semibold">PAUSED</div>
               )}

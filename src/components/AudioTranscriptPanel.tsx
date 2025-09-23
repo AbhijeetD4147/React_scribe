@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { PlayIcon, PauseIcon, VolumeXIcon, MoreVerticalIcon, RefreshCwIcon, UndoIcon, Download, PanelRightClose } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 
 interface AudioTranscriptPanelProps {
@@ -11,12 +11,30 @@ interface AudioTranscriptPanelProps {
   selectedPatient: any;
   isCollapsed?: boolean;
   onToggleCollapse?: () => void;
+  liveTranscription?: string;
 }
 
-export function AudioTranscriptPanel({ dictation, selectedPatient, isCollapsed, onToggleCollapse }: AudioTranscriptPanelProps) {
+export function AudioTranscriptPanel({ 
+  dictation, 
+  selectedPatient, 
+  isCollapsed, 
+  onToggleCollapse,
+  liveTranscription = ""
+}: AudioTranscriptPanelProps) {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const totalTime = 29.52; // 29:52 in minutes
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
+  
+  // Determine if we're showing live transcription
+  const isLiveMode = liveTranscription.length > 0;
+  
+  // Auto-scroll to bottom when new transcription comes in
+  useEffect(() => {
+    if (isLiveMode && scrollAreaRef.current) {
+      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight;
+    }
+  }, [liveTranscription, isLiveMode]);
 
   const parsedDictation = useMemo(() => {
     if (!dictation?.Table?.[0]?.DICTATION_TEXT) {
@@ -48,9 +66,14 @@ export function AudioTranscriptPanel({ dictation, selectedPatient, isCollapsed, 
           {/* Header */}
           <div className="p-4 bg-plum-500">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-bold text-white">{dictation?.Table?.[0]?.DICTATION_NAME || 'Transcript'}</h3>
-              <span className="text-xs text-white">{dictation?.Table?.[0] ? new Date(dictation.Table[0].CREATED_DATE).toLocaleDateString() : ''}</span>
+              <h3 className="text-base font-bold text-white">
+                {isLiveMode ? 'Live Transcription' : (dictation?.Table?.[0]?.DICTATION_NAME || 'Transcript')}
+              </h3>
+              <span className="text-xs text-white">
+                {isLiveMode ? new Date().toLocaleDateString() : (dictation?.Table?.[0] ? new Date(dictation.Table[0].CREATED_DATE).toLocaleDateString() : '')}
+              </span>
             </div>
+            {/* Rest of header content */}
             <div className="flex items-center gap-2 mb-3">
               <Checkbox id="patient-consent" />
               <label htmlFor="patient-consent" className="text-xs text-white">Patient Consent Received?</label>
@@ -61,6 +84,7 @@ export function AudioTranscriptPanel({ dictation, selectedPatient, isCollapsed, 
                 variant="outline"
                 onClick={() => setIsPlaying(!isPlaying)}
                 className="w-8 h-8 bg-white rounded-full flex items-center justify-center"
+                disabled={isLiveMode}
               >
                 {isPlaying ? <PauseIcon className="w-4 h-4 text-plum-500" /> : <PlayIcon className="w-4 h-4 ml-0.5 text-plum-500" />}
               </Button>
@@ -75,9 +99,21 @@ export function AudioTranscriptPanel({ dictation, selectedPatient, isCollapsed, 
 
           {/* Transcript */}
           <div className="flex-1 h-0">
-            <ScrollArea className="h-full">
+            <ScrollArea className="h-full" ref={scrollAreaRef}>
               <div className="p-4">
-                {!dictation ? (
+                {isLiveMode ? (
+                  // Live transcription display
+                  <div className="mb-1 animate-fade-in hover:bg-medical-gray-light/20 rounded-lg p-3 transition-all duration-200">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="font-medium text-primary text-base">
+                        Live:
+                      </span>
+                    </div>
+                    <p className="text-base text-medical-text-primary leading-relaxed">
+                      {liveTranscription}
+                    </p>
+                  </div>
+                ) : !dictation ? (
                   <div className="p-4 text-center">Loading...</div>
                 ) : parsedDictation ? (
                   parsedDictation.map((entry, index) => (

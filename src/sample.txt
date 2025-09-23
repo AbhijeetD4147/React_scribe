@@ -1,0 +1,107 @@
+wss://aiscribeqa.maximeyes.com:5002/ws
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Scribe Realtime</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        #transcript {
+            font-size: 1.2em;
+            font-family: monospace;
+            margin-top: 20px;
+            white-space: pre-wrap;
+            background: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            min-height: 100px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Scribe Realtime</h1>
+    <button id="recordButton">Record</button>
+
+    <p><strong>Transcript:</strong></p>
+    <div id="transcript"></div>
+
+    <script>
+        const recordButton = document.getElementById('recordButton');
+        const transcriptDiv = document.getElementById('transcript');
+
+        let socket;
+        let audioContext;
+        let processor;
+        let input;
+        let stream;
+
+        recordButton.addEventListener('click', async () => {
+            if (socket && socket.readyState === WebSocket.OPEN) {
+                socket.close();
+                processor.disconnect();
+                input.disconnect();
+                stream.getTracks().forEach(t => t.stop());
+                recordButton.textContent = 'Record';
+                return;
+            }
+
+            // Clear previous transcript
+            transcriptDiv.textContent = '';
+
+            const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+            const wsUrl = wsProtocol + '//' + window.location.host + '/ws';
+
+            socket = new WebSocket(wsUrl);
+            socket.binaryType = 'arraybuffer';
+
+            socket.onmessage = (event) => {
+                debugger;
+                // Append each word received
+                transcriptDiv.textContent += event.data + ' ';
+            };
+
+            socket.onopen = async () => {
+                debugger;
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                audioContext = new AudioContext({ sampleRate: 16000 });
+
+                input = audioContext.createMediaStreamSource(stream);
+                processor = audioContext.createScriptProcessor(4096, 1, 1);
+
+                input.connect(processor);
+                processor.connect(audioContext.destination);
+
+                processor.onaudioprocess = (e) => {
+                    debugger;
+                    const inputData = e.inputBuffer.getChannelData(0);
+                    const buffer = new ArrayBuffer(inputData.length * 2);
+                    const output = new DataView(buffer);
+                    for (let i = 0; i < inputData.length; i++) {
+                        let s = Math.max(-1, Math.min(1, inputData[i]));
+                        output.setInt16(i * 2, s * 0x7fff, true); // 16-bit PCM
+                    }
+                    if (socket.readyState === WebSocket.OPEN) {
+                        socket.send(buffer);
+                    }
+                };
+
+                recordButton.textContent = 'Stop';
+            };
+
+            socket.onclose = () => {
+                debugger;
+                console.log('WebSocket closed');
+                recordButton.textContent = 'Record';
+            };
+
+            socket.onerror = (e) => {
+                debugger;
+                console.error('WebSocket error:', e);
+            };
+        });
+    </script>
+</body>
+</html>
