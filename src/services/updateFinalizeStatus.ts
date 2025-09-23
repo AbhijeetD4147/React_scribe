@@ -1,8 +1,22 @@
+import axios from "axios";
+import { Auth_Api } from "../Comman/Constants";
 
 export const updateFinalizeStatus = async (recordingId: number, isFinalized: boolean): Promise<any | null> => {
+  // const url =`${Auth_Api}/e1/DemoScribe/SAuLpR/Patient/UpsertRecording?RECORDING_ID=${recordingId}&IsFinalize=${isFinalized}`;
+
   const url = `/e1/DemoScribe/SAuLpR/Patient/UpsertRecording?RECORDING_ID=${recordingId}&IsFinalize=${isFinalized}`;
 
   try {
+    // const response = await axios.get(url, {
+    // });
+    // if (response.status == 200) {
+    //   return response.data;
+    // }else{
+    //   throw new Error(`HTTP error! status: ${response.status}`);
+    // }
+
+
+
     const response = await fetch(url, {
       method: "GET",
     });

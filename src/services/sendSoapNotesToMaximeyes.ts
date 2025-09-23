@@ -1,7 +1,26 @@
+import axios from "axios";
+import { Auth_Api } from "../Comman/Constants";
+
 
 export const sendSoapNoteToMaximeyes = async (encounterId: number, note: { elementName: string, note: string }): Promise<any | null> => {
+  // const url = `${Auth_Api}/e1/DemoScribe/SAuLpR/Patient/SendSoapNoteToMaximeyes?encounterId=${encounterId}`;
   const url = `/e1/DemoScribe/SAuLpR/Patient/SendSoapNoteToMaximeyes?encounterId=${encounterId}`;
   try {
+
+    // const response = await axios.post(url, note, {
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //   },
+    // });
+
+    // if (response.status == 200) {
+    // const data = await response.data;
+    // return data || null;
+    // }else{
+    //   throw new Error(`HTTP error! status: ${response.status}`);
+    // }
+
+
     const response = await fetch(url, {
       method: "POST",
       headers: {

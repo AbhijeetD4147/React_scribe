@@ -1,3 +1,4 @@
+import axios from "axios";
 import { getAuthToken } from "./authenticate_api";
 
 export const getSoapNotes = async (recordingId: number): Promise<any | null> => {
@@ -7,6 +8,7 @@ export const getSoapNotes = async (recordingId: number): Promise<any | null> => 
     return null;
   }
 
+// const url =`${Auth_Api}/api/common/ExecStoredProcedure
   const url = "/api/common/ExecStoredProcedure";
   const body = {
     ProcedureName: "AIS_GET_SOAP_NOTES",
@@ -25,6 +27,20 @@ export const getSoapNotes = async (recordingId: number): Promise<any | null> => 
   };
 
   try {
+    //  const response = await axios.post(url, body, {
+    //   headers: {
+    //     "Content-Type": "application/json",
+    //     apiKey: `Bearer ${token}`
+    //   },
+    // });
+    // if (response.status == 200) {
+    //   return response.data;
+    // }else if(response.status == 401) {
+    //  await getAuthToken();
+    //  return await getSoapNotes(recordingId);
+    // }
+
+
     const response = await fetch(url, {
       method: "POST",
       headers: {
@@ -38,8 +54,7 @@ export const getSoapNotes = async (recordingId: number): Promise<any | null> => 
     }
     
     const data = await response.json();
-    console.log("Fetching SOAP notes from:", data);
-    
+    console.log("Fetching SOAP notes from:", data);   
     return data || null;
   } catch (error) {
     console.error("Error fetching SOAP notes:", error);
