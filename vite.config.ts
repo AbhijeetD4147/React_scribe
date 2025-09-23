@@ -7,7 +7,6 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    port: 8080,
     proxy: {
       '/api': {
         target: 'https://ioqa.maximeyes.com',
@@ -17,6 +16,12 @@ export default defineConfig(({ mode }) => ({
       '/e1': {
         target: 'https://aiscribeqa.maximeyes.com',
         changeOrigin: true,
+      },
+      '/audio-api': {
+        target: 'https://aiscribeqa.maximeyes.com:5002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/audio-api/, ''),
+        secure: false
       },
     },
   },

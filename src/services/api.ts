@@ -1,32 +1,35 @@
-export const getAuthToken = async (): Promise<string | null> => {
-  const url = "/api/v2/account/authenticate";
-  const body = {
-    vendorid: "df0d4caf-1048-41cc-99c5-0613ed2019c0",
-    vendorpassword: "password@123",
-    accountid: "DemoScribe",
-    accountpassword: "DSPQ109@901",
-  };
+import { Auth_Api } from "../Comman/Constants";
+import { getAuthToken } from "./authenticate_api";
 
-  try {
-    const response = await fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
+// export const getAuthToken = async (): Promise<string | null> => {
+//   const url = `${Auth_Api}/api/v2/account/authenticate`;
+//   const body = {
+//     vendorid: "df0d4caf-1048-41cc-99c5-0613ed2019c0",
+//     vendorpassword: "password@123",
+//     accountid: "DemoScribe",
+//     accountpassword: "DSPQ109@901",
+//   };
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
-    }
+//   try {
+//     const response = await fetch(url, {
+//       method: "POST",
+//       headers: {
+//         "Content-Type": "application/json",
+//       },
+//       body: JSON.stringify(body),
+//     });
 
-    const data = await response.json();
-    return data.Token || null;
-  } catch (error) {
-    console.error("Error fetching auth token:", error);
-    return null;
-  }
-};
+//     if (!response.ok) {
+//       throw new Error(`HTTP error! status: ${response.status}`);
+//     }
+
+//     const data = await response.json();
+//     return data.Token || null;
+//   } catch (error) {
+//     console.error("Error fetching auth token:", error);
+//     return null;
+//   }
+// };
 
 export const getPatientList = async (startDate: string, endDate: string): Promise<{ Table: any[] } | null> => {
   const token = await getAuthToken();

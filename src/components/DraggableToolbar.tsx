@@ -2,6 +2,8 @@ import { useState, useRef, useEffect } from "react";
 import { Upload, Square, Expand, Minimize2, Mic, Pause, GripVertical, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MedicalInterface } from "./MedicalInterface";
+import { toast } from "@/components/ui/sonner";
+import { uploadAudioFile } from "@/services/audioUploadApi";
 
 interface Position {
   x: number;
@@ -20,7 +22,9 @@ export function DraggableToolbar() {
   const [recordingTime, setRecordingTime] = useState(0);
   const toolbarRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
-
+  // Add file input reference
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isAnimating) return; // Don't allow dragging when animating
     
@@ -35,15 +39,15 @@ export function DraggableToolbar() {
       });
     }
   };
-
+  
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || isAnimating) return;
-
+  
     e.preventDefault();
     
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
-
+  
     // Simple bounds checking - keep it within screen with some padding
     const padding = 10;
     const toolbarWidth = 60;
@@ -51,24 +55,24 @@ export function DraggableToolbar() {
     
     const maxX = window.innerWidth - toolbarWidth - padding;
     const maxY = window.innerHeight - toolbarHeight - padding;
-
+  
     const newPosition = {
       x: Math.max(padding, Math.min(newX, maxX)),
       y: Math.max(padding, Math.min(newY, maxY)),
     };
-
+  
     // Use requestAnimationFrame for ultra-smooth dragging
     requestAnimationFrame(() => {
       setPosition(newPosition);
       setOriginalPosition(newPosition);
     });
   };
-
+  
   const handleMouseUp = (e: MouseEvent) => {
     e.preventDefault();
     setIsDragging(false);
   };
-
+  
   useEffect(() => {
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
@@ -83,7 +87,7 @@ export function DraggableToolbar() {
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
     }
-
+  
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -92,7 +96,7 @@ export function DraggableToolbar() {
       document.body.style.webkitUserSelect = '';
     };
   }, [isDragging]);
-
+  
   const handleExpandToggle = () => {
     if (isAnimating) return; // Prevent multiple clicks during animation
     
@@ -108,7 +112,7 @@ export function DraggableToolbar() {
       setTimeout(() => setIsAnimating(false), 500); // Back to original timing
     }
   };
-
+  
   const handleRecordingToggle = () => {
     setIsRecording(!isRecording);
     
@@ -133,7 +137,7 @@ export function DraggableToolbar() {
       // Add your recording stop logic here
     }
   };
-
+  
   const handlePauseToggle = () => {
     if (!isRecording) return; // Can't pause if not recording
     
@@ -156,14 +160,14 @@ export function DraggableToolbar() {
       // Add your recording resume logic here
     }
   };
-
+  
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
-
+  
   // Cleanup interval on unmount
   useEffect(() => {
     return () => {
@@ -172,10 +176,51 @@ export function DraggableToolbar() {
       }
     };
   }, []);
-
+  {/* Add file input reference */}
+        
+          // Add file upload handler
+          const handleFileUpload = () => {
+            fileInputRef.current?.click();
+          };
+          
+          const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+            const files = event.target.files;
+            if (!files || files.length === 0) return;
+            
+            const file = files[0];
+            // 200MB = 200 * 1024 * 1024 bytes
+            const maxSize = 200 * 1024 * 1024;
+            
+            if (file.size > maxSize) {
+              toast.error("File size exceeds the 200MB limit. Please select a smaller file.");
+              // Reset the input
+              if (fileInputRef.current) {
+                fileInputRef.current.value = "";
+              }
+              return;
+            }
+            
+            console.log("File selected:", file.name, "Size:", (file.size / (1024 * 1024)).toFixed(2), "MB");
+            
+            try {
+              toast.info("Uploading file...");
+              const response = await uploadAudioFile(file);
+              console.log("Upload response:", response);
+              toast.success("File uploaded successfully!");
+            } catch (error) {
+              console.error("Error uploading file:", error);
+              toast.error("Failed to upload file. Please try again.");
+            }
+            
+            // Reset the input to allow selecting the same file again
+            if (fileInputRef.current) {
+              fileInputRef.current.value = "";
+            }
+          };
+  
   // Toolbar stays in its current position
   const toolbarPosition = position;
-
+  
   // Calculate popup position based on toolbar position
   const popupWidth = Math.min(window.innerWidth * 0.8, 1200);
   const popupHeight = Math.min(window.innerHeight * 0.8, 800);
@@ -189,16 +234,25 @@ export function DraggableToolbar() {
     x: popupLeft + popupWidth + 10, // Outside the right edge of popup
     y: popupTop + 10                // Aligned with popup top
   };
-
+  
   // Get the expand button position for animation origin
   const expandButtonPosition = toolbarRef.current?.getBoundingClientRect();
   const expandButtonCenter = expandButtonPosition ? {
     x: expandButtonPosition.left + expandButtonPosition.width / 2,
     y: expandButtonPosition.top + expandButtonPosition.height / 2
   } : { x: 0, y: 0 };
-
+  
   return (
     <>
+      {/* Hidden file input */}
+      <input
+        type="file"
+        ref={fileInputRef}
+        onChange={handleFileChange}
+        style={{ display: "none" }}
+        accept="*/*" // You can specify accepted file types here
+      />
+      
       {/* Medical Interface - popup window positioned relative to toolbar's current position */}
       <div
         className={`fixed z-40 ${isDragging ? '' : 'transition-all duration-500 ease-in-out'} ${
@@ -221,7 +275,7 @@ export function DraggableToolbar() {
           <MedicalInterface />
         </div>
       </div>
-
+  
       {/* Draggable Toolbar - moves to popup's top-right corner when expanded but remains draggable */}
       <div
         ref={toolbarRef}
@@ -244,12 +298,15 @@ export function DraggableToolbar() {
           >
             <GripVertical className="w-5 h-5 text-gray-600" />
           </Button>
-
+  
+          
+  
           {/* Upload/Import button */}
           <Button
             variant="ghost"
             size="icon"
             className="w-10 h-10 p-0 bg-white hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
+            onClick={handleFileUpload}
           >
             <Upload className="w-5 h-5 text-gray-700" />
           </Button>

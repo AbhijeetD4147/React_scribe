@@ -16,7 +16,7 @@ const App = () => (
       <Sonner position="top-right" />
       <BrowserRouter>
         <Routes>
-          <Route path="/" element={<VirtualAssistant />} />
+          <Route path="/" element={<DraggableInterface />} />
           <Route path="/index" element={<Index />} />
           <Route path="/medical" element={<FullScreenMedical />} />
           <Route path="/draggable" element={<DraggableInterface />} />
