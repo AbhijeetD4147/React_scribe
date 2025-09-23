@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Calendar, Menu, CheckCircle, AlertCircle, Search, Folder, Paperclip, Send, Check, Play, Pause, Volume2, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
-import { getPatientList, getDictation, getSoapNotes } from '../services/api';
-
+import { getPatientList} from '../services/getPatientList_ExecStoredProcedure';
+import { getDictation } from '../services/getDictation_ExecStoredProcedure';
+import { getSoapNotes } from '../services/getSoapNotes_ExecStoredProcedure';
 const VirtualAssistant: React.FC = () => {
   const [patients, setPatients] = useState<any[]>([]);
   const [activePatient, setActivePatient] = useState<any>(null);

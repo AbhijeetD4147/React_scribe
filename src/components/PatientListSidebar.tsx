@@ -8,7 +8,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Calendar } from "@/components/ui/calendar";
 import { format, subDays, subMonths } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { getPatientList } from "@/services/api";
+import { getPatientList } from "../services/getPatientList_ExecStoredProcedure";
 
 interface Patient {
   RECORDING_ID: number;

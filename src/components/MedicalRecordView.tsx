@@ -2,13 +2,14 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ChevronRightIcon, ChevronLeftIcon, FileTextIcon, SendHorizonal, SearchIcon, CheckCircle2, Files, FileDown, AlertCircle, Mic } from "lucide-react";
-import { updateFinalizeStatus, sendSoapNoteToMaximeyes } from "@/services/api";
+import { sendSoapNoteToMaximeyes } from "../services/sendSoapNotesToMaximeyes";
 import { Input } from "@/components/ui/input";
 import { useMemo, useState, useRef, useEffect } from "react";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from "@/components/ui/sonner";
+import { updateFinalizeStatus } from "../services/updateFinalizeStatus";
 
 interface MedicalRecordViewProps {
   soapNotes: any;

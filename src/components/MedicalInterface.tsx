@@ -3,7 +3,8 @@ import { PatientListSidebar } from "./PatientListSidebar";
 import { PanelRightClose } from "lucide-react";
 import { MedicalRecordView } from "./MedicalRecordView";
 import { AudioTranscriptPanel } from "./AudioTranscriptPanel";
-import { getDictation, getSoapNotes } from "@/services/api";
+import { getDictation } from "../services/getDictation_ExecStoredProcedure";
+import { getSoapNotes } from "../services/getSoapNotes_ExecStoredProcedure";
 
 export function MedicalInterface() {
   const [selectedPatient, setSelectedPatient] = useState<any>(null);
