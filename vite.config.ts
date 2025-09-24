@@ -7,30 +7,30 @@ import { componentTagger } from "lovable-tagger";
 export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
-    // proxy: {
-    //   '/api': {
-    //     target: 'https://ioqa.maximeyes.com',
-    //     changeOrigin: true,
-    //     rewrite: (path) => path.replace(/^\/api/, '/api'),
-    //   },
-    //   '/e1': {
-    //     target: 'https://aiscribeqa.maximeyes.com',
-    //     changeOrigin: true,
-    //   },
-    //   '/audio-api': {
-    //     target: 'https://aiscribeqa.maximeyes.com:5002',
-    //     changeOrigin: true,
-    //     rewrite: (path) => path.replace(/^\/audio-api/, ''),
-    //     secure: false
-    //   },
-    //   '/transcription-ws': {
-    //     target: 'wss://aiscribeqa.maximeyes.com:5002',
-    //     ws: true,
-    //     changeOrigin: true,
-    //     secure: false,
-    //     rewrite: (path) => path.replace(/^\/transcription-ws/, '')
-    //   },
-    // },
+    proxy: {
+      '/api': {
+        target: 'https://ioqa.maximeyes.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/api'),
+      },
+      '/e1': {
+        target: 'https://aiscribeqa.maximeyes.com',
+        changeOrigin: true,
+      },
+      '/audio-api': {
+        target: 'https://aiscribeqa.maximeyes.com:5002',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/audio-api/, ''),
+        secure: false
+      },
+      '/transcription-ws': {
+        target: 'wss://aiscribeqa.maximeyes.com:5002',
+        ws: true,
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/transcription-ws/, '')
+      },
+    },
   },
   plugins: [
     react(),

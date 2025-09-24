@@ -21,13 +21,27 @@ export const startTranscription = async (onTranscriptionUpdate: TranscriptionCal
     // Connect to WebSocket using the proxy
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    socket = new WebSocket(`${protocol}//${host}/transcription-ws/ws`);
+    // Change line 24 from:
+    // socket = new WebSocket(`${protocol}//${host}/transcription-ws/ws`);
+    
+    // To:
+    socket = new WebSocket(`wss://aiscribeqa.maximeyes.com:5001/ws`);
     socket.binaryType = 'arraybuffer';
 
     // Handle incoming messages
     socket.onmessage = (event) => {
       if (transcriptionCallback) {
-        transcriptionCallback(event.data);
+        try {
+          const jsonData = JSON.parse(event.data);
+          
+          // Extract the transcription text based on the message type
+          if (jsonData.type === "word" || jsonData.type === "final") {
+            transcriptionCallback(jsonData.value);
+          }
+        } catch (error) {
+          // If it's not valid JSON, pass the raw data
+          transcriptionCallback(event.data);
+        }
       }
     };
 
