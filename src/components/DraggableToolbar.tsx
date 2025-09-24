@@ -3,9 +3,8 @@ import { Upload, Square, Expand, Minimize2, Mic, Pause, GripVertical, Play } fro
 import { Button } from "@/components/ui/button";
 import { MedicalInterface } from "./MedicalInterface";
 import { toast } from "@/components/ui/sonner";
-import { uploadAudioFile } from "@/services/audioUploadApi";
+import { uploadAudioFile, useAudioResponseStore } from "@/services/audioUploadApi";
 import { startTranscription, stopTranscription } from "@/services/transcriptionWebSocket";
-// Update the import to include the ref type
 import VirtualAssistant, { VirtualAssistantRef } from "./VirtualAssistant";
 
 interface Position {
@@ -17,25 +16,53 @@ export function DraggableToolbar() {
   const [isExpanded, setIsExpanded] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [position, setPosition] = useState<Position>({ x: window.innerWidth - 80, y: 20 });
-  const [originalPosition, setOriginalPosition] = useState<Position>({ x: window.innerWidth - 80, y: 20 });
   const [isDragging, setIsDragging] = useState(false);
   const [dragOffset, setDragOffset] = useState<Position>({ x: 0, y: 0 });
   const [isRecording, setIsRecording] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
+  const [liveTranscription, setLiveTranscription] = useState("");
+  const [windowSize, setWindowSize] = useState({
+    width: window.innerWidth,
+    height: window.innerHeight
+  });
+  
   const toolbarRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const virtualAssistantRef = useRef<VirtualAssistantRef>(null);
+  
+  // Get data from our store
+  const audioResponse = useAudioResponseStore(state => state.response);
+  const isLoading = useAudioResponseStore(state => state.isLoading);
+  const error = useAudioResponseStore(state => state.error);
 
-  // Add state for live transcription
-  const [liveTranscription, setLiveTranscription] = useState("");
-
-  const [transcriptionText, setTranscriptionText] = useState("");
+  // Handle window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setWindowSize({
+        width: window.innerWidth,
+        height: window.innerHeight
+      });
+      
+      // Ensure toolbar stays within bounds when window is resized
+      const padding = 10;
+      const toolbarWidth = 60;
+      const toolbarHeight = 280;
+      
+      setPosition(prev => ({
+        x: Math.min(prev.x, window.innerWidth - toolbarWidth - padding),
+        y: Math.min(prev.y, window.innerHeight - toolbarHeight - padding)
+      }));
+    };
+    
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    if (isAnimating) return; // Don't allow dragging when animating
-
-    e.preventDefault(); // Prevent text selection and other default behaviors
+    if (isAnimating) return;
+    e.preventDefault();
     setIsDragging(true);
 
     const rect = toolbarRef.current?.getBoundingClientRect();
@@ -49,13 +76,11 @@ export function DraggableToolbar() {
 
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || isAnimating) return;
-
     e.preventDefault();
 
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
 
-    // Simple bounds checking - keep it within screen with some padding
     const padding = 10;
     const toolbarWidth = 60;
     const toolbarHeight = 280;
@@ -68,10 +93,8 @@ export function DraggableToolbar() {
       y: Math.max(padding, Math.min(newY, maxY)),
     };
 
-    // Use requestAnimationFrame for ultra-smooth dragging
     requestAnimationFrame(() => {
       setPosition(newPosition);
-      setOriginalPosition(newPosition);
     });
   };
 
@@ -85,12 +108,9 @@ export function DraggableToolbar() {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("mouseleave", handleMouseUp);
-
-      // Disable text selection during drag
       document.body.style.userSelect = 'none';
       document.body.style.webkitUserSelect = 'none';
     } else {
-      // Re-enable text selection
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
     }
@@ -105,32 +125,20 @@ export function DraggableToolbar() {
   }, [isDragging]);
 
   const handleExpandToggle = () => {
-    if (isAnimating) return; // Prevent multiple clicks during animation
-
+    if (isAnimating) return;
     setIsAnimating(true);
-
-    if (!isExpanded) {
-      // When expanding, show medical interface with smooth animation
-      setIsExpanded(true);
-      setTimeout(() => setIsAnimating(false), 500); // Back to original timing
-    } else {
-      // When collapsing, hide medical interface with smooth animation
-      setIsExpanded(false);
-      setTimeout(() => setIsAnimating(false), 500); // Back to original timing
-    }
+    setIsExpanded(!isExpanded);
+    setTimeout(() => setIsAnimating(false), 500);
   };
 
   const handleRecordingToggle = async () => {
     if (!isRecording) {
       try {
-        // Start transcription
         const started = await startTranscription((text) => {
-          // Update transcription text
           setLiveTranscription(prev => prev + text + " ");
         });
 
         if (started) {
-          // Start the timer
           setRecordingTime(0);
           setIsPaused(false);
           recordingIntervalRef.current = setInterval(() => {
@@ -140,7 +148,6 @@ export function DraggableToolbar() {
           setIsRecording(true);
           toast.success("Recording started");
 
-          // Ensure the interface is expanded to show transcription
           if (!isExpanded) {
             handleExpandToggle();
           }
@@ -152,10 +159,8 @@ export function DraggableToolbar() {
         toast.error("Could not access microphone. Please check permissions.");
       }
     } else {
-      // Stop transcription
       stopTranscription();
 
-      // Stop the timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
@@ -169,80 +174,51 @@ export function DraggableToolbar() {
   };
 
   const handlePauseToggle = () => {
-    if (!isRecording) return; // Can't pause if not recording
-
+    if (!isRecording) return;
     setIsPaused(!isPaused);
 
     if (!isPaused) {
-      // Pause recording
-      // if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
-      //   mediaRecorderRef.current.pause();
-      // }
-
-      // Pause the timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-
-      console.log("Recording paused");
       toast.info("Recording paused");
     } else {
-      // Resume recording
-      // if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
-      //   mediaRecorderRef.current.resume();
-      // }
-
-      // Resume the timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
-
-      console.log("Recording resumed");
       toast.info("Recording resumed");
     }
   };
 
-  // Format time as MM:SS
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  // Cleanup interval on unmount
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
-
-      // Stop transcription
       stopTranscription();
     };
   }, []);
-  {/* Add file input reference */ }
 
-  // Add file upload handler
   const handleFileUpload = () => {
     fileInputRef.current?.click();
   };
-
-  const [apiResponse, setApiResponse] = useState<any>(null);
-  // Update the ref type
-  const virtualAssistantRef = useRef<VirtualAssistantRef>(null);
 
   const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    // 200MB = 200 * 1024 * 1024 bytes
     const maxSize = 200 * 1024 * 1024;
 
     if (file.size > maxSize) {
       toast.error("File size exceeds the 200MB limit. Please select a smaller file.");
-      // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
@@ -253,80 +229,53 @@ export function DraggableToolbar() {
 
     try {
       toast.info("Uploading file...");
+      
+      // This will update our store automatically
       const response = await uploadAudioFile(file);
-      console.log("Upload response:", response);
-
-      // Set the API response state
-      setApiResponse(response);
-
-      // The VirtualAssistant component will be rendered with the ref in the next render
-      // We'll update it in useEffect
-
+      
+      // Ensure the interface is expanded
+      if (!isExpanded) {
+        handleExpandToggle();
+      }
+      
+      toast.success("File processed successfully");
     } catch (error) {
       console.error("Error uploading file:", error);
       toast.error("Error uploading file. Please try again.");
     } finally {
-      // Reset the input
       if (fileInputRef.current) {
         fileInputRef.current.value = "";
       }
     }
   };
 
-  // Add this useEffect to update the VirtualAssistant when apiResponse changes
+  // Listen for changes in the store
   useEffect(() => {
-    let isMounted = true;
-    
-    if (apiResponse && virtualAssistantRef.current) {
-      console.log("Updating VirtualAssistant with API response");
-      
-      // Remove the timeout and update immediately
-      if (isMounted && virtualAssistantRef.current && virtualAssistantRef.current.updateWithApiResponse) {
-        virtualAssistantRef.current.updateWithApiResponse(apiResponse);
-      }
+    if (audioResponse && virtualAssistantRef.current) {
+      virtualAssistantRef.current.updateWithApiResponse(audioResponse);
     }
-    
-    return () => {
-      isMounted = false;
-    };
-  }, [apiResponse]);
+  }, [audioResponse]);
 
-  // Toolbar stays in its current position
-  const toolbarPosition = position;
-
-  // Calculate popup position based on toolbar position
-  const popupWidth = Math.min(window.innerWidth * 0.8, 1200);
-  const popupHeight = Math.min(window.innerHeight * 0.8, 800);
-
-  // Position popup to the left of toolbar with some spacing
-  const popupLeft = Math.max(20, Math.min(position.x - popupWidth - 20, window.innerWidth - popupWidth - 20));
-  const popupTop = Math.max(20, Math.min(position.y, window.innerHeight - popupHeight - 20));
-
-  // When expanded, position toolbar at the right edge of popup (outside)
+  // Calculate positions - using windowSize state to trigger recalculation on resize
+  const popupWidth = Math.min(windowSize.width * 0.8, 1200);
+  const popupHeight = Math.min(windowSize.height * 0.8, 800);
+  const popupLeft = Math.max(20, Math.min(position.x - popupWidth - 20, windowSize.width - popupWidth - 20));
+  const popupTop = Math.max(20, Math.min(position.y, windowSize.height - popupHeight - 20));
   const expandedToolbarPosition = {
-    x: popupLeft + popupWidth + 10, // Outside the right edge of popup
-    y: popupTop + 10                // Aligned with popup top
+    x: popupLeft + popupWidth + 10,
+    y: popupTop + 10
   };
-
-  // Get the expand button position for animation origin
-  const expandButtonPosition = toolbarRef.current?.getBoundingClientRect();
-  const expandButtonCenter = expandButtonPosition ? {
-    x: expandButtonPosition.left + expandButtonPosition.width / 2,
-    y: expandButtonPosition.top + expandButtonPosition.height / 2
-  } : { x: 0, y: 0 };
 
   return (
     <>
-      {/* Hidden file input */}
       <input
         type="file"
         ref={fileInputRef}
         onChange={handleFileChange}
         style={{ display: "none" }}
-        accept="*/*" // You can specify accepted file types here
+        accept="*/*"
       />
 
-      {/* Medical Interface - popup window positioned relative to toolbar's current position */}
       <div
         className={`fixed z-40 ${isDragging ? '' : 'transition-all duration-500 ease-in-out'} ${isExpanded
           ? 'opacity-100 scale-100'
@@ -335,16 +284,15 @@ export function DraggableToolbar() {
         style={{
           left: `${popupLeft}px`,
           top: `${popupTop}px`,
-          transformOrigin: `${popupWidth}px 0px`, // Scale from top-right corner (where toolbar will be)
+          transformOrigin: `${popupWidth}px 0px`,
           width: `${popupWidth}px`,
           height: `${popupHeight}px`,
-          willChange: isDragging ? 'transform' : 'auto', // Optimize for dragging performance
+          willChange: isDragging ? 'transform' : 'auto',
         }}
       >
-        <div className={`h-full w-full bg-white border-2 border-primary/40 rounded-lg shadow-2xl transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+        <div className={`h-full w-full bg-white border-2 border-primary/40 rounded-lg shadow-2xl transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 scale-90' : 'opacity-0 scale-95'
           }`}>
-          <MedicalInterface liveTranscription={liveTranscription} />
-          {apiResponse ? (
+          {audioResponse ? (
             <VirtualAssistant ref={virtualAssistantRef} />
           ) : (
             <MedicalInterface liveTranscription={liveTranscription} />
@@ -352,7 +300,6 @@ export function DraggableToolbar() {
         </div>
       </div>
 
-      {/* Draggable Toolbar - moves to popup's top-right corner when expanded but remains draggable */}
       <div
         ref={toolbarRef}
         className={`fixed z-50 select-none ${isDragging ? '' : 'transition-all duration-500 ease-in-out'}`}
@@ -360,13 +307,12 @@ export function DraggableToolbar() {
           left: `${isExpanded ? expandedToolbarPosition.x : position.x}px`,
           top: `${isExpanded ? expandedToolbarPosition.y : position.y}px`,
           cursor: isDragging ? "grabbing" : "grab",
-          transform: isAnimating ? 'scale(1.05)' : 'scale(1)', // Slight scale during animation for visual feedback
-          willChange: isDragging ? 'transform' : 'auto', // Optimize for dragging performance
+          transform: isAnimating ? 'scale(1.05)' : 'scale(1)',
+          willChange: isDragging ? 'transform' : 'auto',
         }}
         onMouseDown={!isAnimating ? handleMouseDown : undefined}
       >
         <div className="bg-primary/10 rounded-full shadow-lg border border-primary/20 p-2 flex flex-col items-center gap-2 w-16 transition-all duration-300 ease-in-out">
-          {/* 3x3 dots draggable handle at the top */}
           <Button
             variant="ghost"
             size="icon"
@@ -375,19 +321,16 @@ export function DraggableToolbar() {
             <GripVertical className="w-5 h-5 text-gray-600" />
           </Button>
 
-
-
-          {/* Upload/Import button */}
           <Button
             variant="ghost"
             size="icon"
             className="w-10 h-10 p-0 bg-white hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
             onClick={handleFileUpload}
+            disabled={isLoading}
           >
             <Upload className="w-5 h-5 text-gray-700" />
           </Button>
 
-          {/* Recording button - Mic when not recording, Stop when recording */}
           <Button
             variant="ghost"
             size="icon"
@@ -401,7 +344,6 @@ export function DraggableToolbar() {
             )}
           </Button>
 
-          {/* Pause/Resume button - only active when recording */}
           <Button
             variant="ghost"
             size="icon"
@@ -419,7 +361,6 @@ export function DraggableToolbar() {
             )}
           </Button>
 
-          {/* Expand/Collapse button */}
           <Button
             variant="ghost"
             size="icon"
@@ -436,16 +377,21 @@ export function DraggableToolbar() {
             </div>
           </Button>
 
-          {/* Recording timer - shows only when recording */}
           {isRecording && (
             <div className={`text-xs font-mono mt-1 px-2 py-1 rounded-lg border transition-colors shadow-sm ${isPaused
               ? 'text-orange-700 bg-orange-50 border-orange-300'
               : 'text-red-700 bg-red-50 border-red-300'
               }`}>
-              {new Date(recordingTime * 1000).toISOString().substr(11, 8)}
+              {formatTime(recordingTime)}
               {isPaused && (
                 <div className="text-[10px] text-orange-600 mt-0.5 font-semibold">PAUSED</div>
               )}
+            </div>
+          )}
+          
+          {isLoading && (
+            <div className="text-xs font-mono mt-1 px-2 py-1 rounded-lg border bg-blue-50 border-blue-300 text-blue-700">
+              LOADING
             </div>
           )}
         </div>

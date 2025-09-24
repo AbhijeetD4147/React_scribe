@@ -7,9 +7,48 @@ const DraggableInterface = () => {
   const [popOutWindow, setPopOutWindow] = useState<Window | null>(null);
 
   const handlePopOut = () => {
-    const newWindow = window.open('', '_blank', 'width=1200,height=800');
+    // Increase window size for better visibility
+    const newWindow = window.open('', '_blank', 'width=1400,height=900');
     if (newWindow) {
       newWindow.document.title = 'Virtual Assistant';
+      
+      // Add base styling to ensure proper scaling
+      const styleEl = newWindow.document.createElement('style');
+      styleEl.textContent = `
+        html, body { 
+          height: 100%; 
+          margin: 0; 
+          padding: 0; 
+          overflow: hidden;
+          background-color: #f9fafb;
+        }
+        #virtual-assistant-container {
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0;
+          overflow: auto;
+        }
+        /* Override any fixed dimensions */
+        .min-h-screen {
+          min-height: unset !important;
+        }
+        /* Scale the component to fit the window */
+        .virtual-assistant-wrapper {
+          transform: scale(0.9);
+          transform-origin: center center;
+          width: 100%;
+          height: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+      `;
+      newWindow.document.head.appendChild(styleEl);
+      
+      // Copy existing stylesheets
       Array.from(document.styleSheets).forEach(styleSheet => {
         try {
           const newStyleEl = newWindow.document.createElement('style');
@@ -21,7 +60,16 @@ const DraggableInterface = () => {
           console.error('Could not copy stylesheet:', e);
         }
       });
+      
+      // Create a container with proper structure
       const appRoot = newWindow.document.createElement('div');
+      appRoot.id = 'virtual-assistant-container';
+      
+      // Create a wrapper for scaling
+      const wrapper = newWindow.document.createElement('div');
+      wrapper.className = 'virtual-assistant-wrapper';
+      
+      appRoot.appendChild(wrapper);
       newWindow.document.body.appendChild(appRoot);
       setPopOutWindow(newWindow);
     }
@@ -62,6 +110,7 @@ const DraggableInterface = () => {
             console.log('API Response:', response);
           }}
         />,
+        popOutWindow.document.querySelector('.virtual-assistant-wrapper') || 
         popOutWindow.document.body
       )}
     </div>
