@@ -5,6 +5,8 @@ import { MedicalInterface } from "./MedicalInterface";
 import { toast } from "@/components/ui/sonner";
 import { uploadAudioFile } from "@/services/audioUploadApi";
 import { startTranscription, stopTranscription } from "@/services/transcriptionWebSocket";
+// Update the import to include the ref type
+import VirtualAssistant, { VirtualAssistantRef } from "./VirtualAssistant";
 
 interface Position {
   x: number;
@@ -24,18 +26,18 @@ export function DraggableToolbar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
+
   // Add state for live transcription
   const [liveTranscription, setLiveTranscription] = useState("");
-  
+
   const [transcriptionText, setTranscriptionText] = useState("");
-  
+
   const handleMouseDown = (e: React.MouseEvent) => {
     if (isAnimating) return; // Don't allow dragging when animating
-    
+
     e.preventDefault(); // Prevent text selection and other default behaviors
     setIsDragging(true);
-    
+
     const rect = toolbarRef.current?.getBoundingClientRect();
     if (rect) {
       setDragOffset({
@@ -44,46 +46,46 @@ export function DraggableToolbar() {
       });
     }
   };
-  
+
   const handleMouseMove = (e: MouseEvent) => {
     if (!isDragging || isAnimating) return;
-  
+
     e.preventDefault();
-    
+
     const newX = e.clientX - dragOffset.x;
     const newY = e.clientY - dragOffset.y;
-  
+
     // Simple bounds checking - keep it within screen with some padding
     const padding = 10;
     const toolbarWidth = 60;
     const toolbarHeight = 280;
-    
+
     const maxX = window.innerWidth - toolbarWidth - padding;
     const maxY = window.innerHeight - toolbarHeight - padding;
-  
+
     const newPosition = {
       x: Math.max(padding, Math.min(newX, maxX)),
       y: Math.max(padding, Math.min(newY, maxY)),
     };
-  
+
     // Use requestAnimationFrame for ultra-smooth dragging
     requestAnimationFrame(() => {
       setPosition(newPosition);
       setOriginalPosition(newPosition);
     });
   };
-  
+
   const handleMouseUp = (e: MouseEvent) => {
     e.preventDefault();
     setIsDragging(false);
   };
-  
+
   useEffect(() => {
     if (isDragging) {
       document.addEventListener("mousemove", handleMouseMove);
       document.addEventListener("mouseup", handleMouseUp);
       document.addEventListener("mouseleave", handleMouseUp);
-      
+
       // Disable text selection during drag
       document.body.style.userSelect = 'none';
       document.body.style.webkitUserSelect = 'none';
@@ -92,7 +94,7 @@ export function DraggableToolbar() {
       document.body.style.userSelect = '';
       document.body.style.webkitUserSelect = '';
     }
-  
+
     return () => {
       document.removeEventListener("mousemove", handleMouseMove);
       document.removeEventListener("mouseup", handleMouseUp);
@@ -101,12 +103,12 @@ export function DraggableToolbar() {
       document.body.style.webkitUserSelect = '';
     };
   }, [isDragging]);
-  
+
   const handleExpandToggle = () => {
     if (isAnimating) return; // Prevent multiple clicks during animation
-    
+
     setIsAnimating(true);
-    
+
     if (!isExpanded) {
       // When expanding, show medical interface with smooth animation
       setIsExpanded(true);
@@ -117,7 +119,7 @@ export function DraggableToolbar() {
       setTimeout(() => setIsAnimating(false), 500); // Back to original timing
     }
   };
-  
+
   const handleRecordingToggle = async () => {
     if (!isRecording) {
       try {
@@ -126,7 +128,7 @@ export function DraggableToolbar() {
           // Update transcription text
           setLiveTranscription(prev => prev + text + " ");
         });
-        
+
         if (started) {
           // Start the timer
           setRecordingTime(0);
@@ -134,10 +136,10 @@ export function DraggableToolbar() {
           recordingIntervalRef.current = setInterval(() => {
             setRecordingTime(prev => prev + 1);
           }, 1000);
-          
+
           setIsRecording(true);
           toast.success("Recording started");
-          
+
           // Ensure the interface is expanded to show transcription
           if (!isExpanded) {
             handleExpandToggle();
@@ -152,37 +154,37 @@ export function DraggableToolbar() {
     } else {
       // Stop transcription
       stopTranscription();
-      
+
       // Stop the timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      
+
       setRecordingTime(0);
       setIsPaused(false);
       setIsRecording(false);
       toast.info("Recording stopped");
     }
   };
-  
+
   const handlePauseToggle = () => {
     if (!isRecording) return; // Can't pause if not recording
-    
+
     setIsPaused(!isPaused);
-    
+
     if (!isPaused) {
       // Pause recording
       // if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'recording') {
       //   mediaRecorderRef.current.pause();
       // }
-      
+
       // Pause the timer
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
         recordingIntervalRef.current = null;
       }
-      
+
       console.log("Recording paused");
       toast.info("Recording paused");
     } else {
@@ -190,94 +192,129 @@ export function DraggableToolbar() {
       // if (mediaRecorderRef.current && mediaRecorderRef.current.state === 'paused') {
       //   mediaRecorderRef.current.resume();
       // }
-      
+
       // Resume the timer
       recordingIntervalRef.current = setInterval(() => {
         setRecordingTime(prev => prev + 1);
       }, 1000);
-      
+
       console.log("Recording resumed");
       toast.info("Recording resumed");
     }
   };
-  
-  // Clean up resources when component unmounts
+
+  // Format time as MM:SS
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  // Cleanup interval on unmount
   useEffect(() => {
     return () => {
       if (recordingIntervalRef.current) {
         clearInterval(recordingIntervalRef.current);
       }
-      
+
       // Stop transcription
       stopTranscription();
     };
   }, []);
-  {/* Add file input reference */}
-        
-          // Add file upload handler
-          const handleFileUpload = () => {
-            fileInputRef.current?.click();
-          };
-          
-          const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
-            const files = event.target.files;
-            if (!files || files.length === 0) return;
-            
-            const file = files[0];
-            // 200MB = 200 * 1024 * 1024 bytes
-            const maxSize = 200 * 1024 * 1024;
-            
-            if (file.size > maxSize) {
-              toast.error("File size exceeds the 200MB limit. Please select a smaller file.");
-              // Reset the input
-              if (fileInputRef.current) {
-                fileInputRef.current.value = "";
-              }
-              return;
-            }
-            
-            console.log("File selected:", file.name, "Size:", (file.size / (1024 * 1024)).toFixed(2), "MB");
-            
-            try {
-              toast.info("Uploading file...");
-              const response = await uploadAudioFile(file);
-              console.log("Upload response:", response);
-              toast.success("File uploaded successfully!");
-            } catch (error) {
-              console.error("Error uploading file:", error);
-              toast.error("Failed to upload file. Please try again.");
-            }
-            
-            // Reset the input to allow selecting the same file again
-            if (fileInputRef.current) {
-              fileInputRef.current.value = "";
-            }
-          };
-  
+  {/* Add file input reference */ }
+
+  // Add file upload handler
+  const handleFileUpload = () => {
+    fileInputRef.current?.click();
+  };
+
+  const [apiResponse, setApiResponse] = useState<any>(null);
+  // Update the ref type
+  const virtualAssistantRef = useRef<VirtualAssistantRef>(null);
+
+  const handleFileChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    const file = files[0];
+    // 200MB = 200 * 1024 * 1024 bytes
+    const maxSize = 200 * 1024 * 1024;
+
+    if (file.size > maxSize) {
+      toast.error("File size exceeds the 200MB limit. Please select a smaller file.");
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+      return;
+    }
+
+    console.log("File selected:", file.name, "Size:", (file.size / (1024 * 1024)).toFixed(2), "MB");
+
+    try {
+      toast.info("Uploading file...");
+      const response = await uploadAudioFile(file);
+      console.log("Upload response:", response);
+
+      // Set the API response state
+      setApiResponse(response);
+
+      // The VirtualAssistant component will be rendered with the ref in the next render
+      // We'll update it in useEffect
+
+    } catch (error) {
+      console.error("Error uploading file:", error);
+      toast.error("Error uploading file. Please try again.");
+    } finally {
+      // Reset the input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  // Add this useEffect to update the VirtualAssistant when apiResponse changes
+  useEffect(() => {
+    let isMounted = true;
+    
+    if (apiResponse && virtualAssistantRef.current) {
+      console.log("Updating VirtualAssistant with API response");
+      
+      // Remove the timeout and update immediately
+      if (isMounted && virtualAssistantRef.current && virtualAssistantRef.current.updateWithApiResponse) {
+        virtualAssistantRef.current.updateWithApiResponse(apiResponse);
+      }
+    }
+    
+    return () => {
+      isMounted = false;
+    };
+  }, [apiResponse]);
+
   // Toolbar stays in its current position
   const toolbarPosition = position;
-  
+
   // Calculate popup position based on toolbar position
   const popupWidth = Math.min(window.innerWidth * 0.8, 1200);
   const popupHeight = Math.min(window.innerHeight * 0.8, 800);
-  
+
   // Position popup to the left of toolbar with some spacing
   const popupLeft = Math.max(20, Math.min(position.x - popupWidth - 20, window.innerWidth - popupWidth - 20));
   const popupTop = Math.max(20, Math.min(position.y, window.innerHeight - popupHeight - 20));
-  
+
   // When expanded, position toolbar at the right edge of popup (outside)
   const expandedToolbarPosition = {
     x: popupLeft + popupWidth + 10, // Outside the right edge of popup
     y: popupTop + 10                // Aligned with popup top
   };
-  
+
   // Get the expand button position for animation origin
   const expandButtonPosition = toolbarRef.current?.getBoundingClientRect();
   const expandButtonCenter = expandButtonPosition ? {
     x: expandButtonPosition.left + expandButtonPosition.width / 2,
     y: expandButtonPosition.top + expandButtonPosition.height / 2
   } : { x: 0, y: 0 };
-  
+
   return (
     <>
       {/* Hidden file input */}
@@ -288,14 +325,13 @@ export function DraggableToolbar() {
         style={{ display: "none" }}
         accept="*/*" // You can specify accepted file types here
       />
-      
+
       {/* Medical Interface - popup window positioned relative to toolbar's current position */}
       <div
-        className={`fixed z-40 ${isDragging ? '' : 'transition-all duration-500 ease-in-out'} ${
-          isExpanded
-            ? 'opacity-100 scale-100'
-            : 'opacity-0 scale-0 pointer-events-none'
-        }`}
+        className={`fixed z-40 ${isDragging ? '' : 'transition-all duration-500 ease-in-out'} ${isExpanded
+          ? 'opacity-100 scale-100'
+          : 'opacity-0 scale-0 pointer-events-none'
+          }`}
         style={{
           left: `${popupLeft}px`,
           top: `${popupTop}px`,
@@ -305,13 +341,17 @@ export function DraggableToolbar() {
           willChange: isDragging ? 'transform' : 'auto', // Optimize for dragging performance
         }}
       >
-        <div className={`h-full w-full bg-white border-2 border-primary/40 rounded-lg shadow-2xl transition-all duration-300 ease-in-out overflow-hidden ${
-          isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
-        }`}>
+        <div className={`h-full w-full bg-white border-2 border-primary/40 rounded-lg shadow-2xl transition-all duration-300 ease-in-out overflow-hidden ${isExpanded ? 'opacity-100 scale-100' : 'opacity-0 scale-95'
+          }`}>
           <MedicalInterface liveTranscription={liveTranscription} />
+          {apiResponse ? (
+            <VirtualAssistant ref={virtualAssistantRef} />
+          ) : (
+            <MedicalInterface liveTranscription={liveTranscription} />
+          )}
         </div>
       </div>
-  
+
       {/* Draggable Toolbar - moves to popup's top-right corner when expanded but remains draggable */}
       <div
         ref={toolbarRef}
@@ -334,9 +374,9 @@ export function DraggableToolbar() {
           >
             <GripVertical className="w-5 h-5 text-gray-600" />
           </Button>
-  
-          
-  
+
+
+
           {/* Upload/Import button */}
           <Button
             variant="ghost"
@@ -365,11 +405,10 @@ export function DraggableToolbar() {
           <Button
             variant="ghost"
             size="icon"
-            className={`w-10 h-10 p-0 bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm ${
-              !isRecording
-                ? 'opacity-50 cursor-not-allowed hover:bg-white hover:border-gray-300'
-                : 'hover:bg-primary/10 hover:border-primary/40'
-            }`}
+            className={`w-10 h-10 p-0 bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm ${!isRecording
+              ? 'opacity-50 cursor-not-allowed hover:bg-white hover:border-gray-300'
+              : 'hover:bg-primary/10 hover:border-primary/40'
+              }`}
             onClick={handlePauseToggle}
             disabled={!isRecording}
           >
@@ -399,11 +438,10 @@ export function DraggableToolbar() {
 
           {/* Recording timer - shows only when recording */}
           {isRecording && (
-            <div className={`text-xs font-mono mt-1 px-2 py-1 rounded-lg border transition-colors shadow-sm ${
-              isPaused
-                ? 'text-orange-700 bg-orange-50 border-orange-300'
-                : 'text-red-700 bg-red-50 border-red-300'
-            }`}>
+            <div className={`text-xs font-mono mt-1 px-2 py-1 rounded-lg border transition-colors shadow-sm ${isPaused
+              ? 'text-orange-700 bg-orange-50 border-orange-300'
+              : 'text-red-700 bg-red-50 border-red-300'
+              }`}>
               {new Date(recordingTime * 1000).toISOString().substr(11, 8)}
               {isPaused && (
                 <div className="text-[10px] text-orange-600 mt-0.5 font-semibold">PAUSED</div>

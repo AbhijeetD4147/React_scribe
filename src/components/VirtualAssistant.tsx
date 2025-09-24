@@ -1,18 +1,59 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { Calendar, Menu, CheckCircle, AlertCircle, Search, Folder, Paperclip, Send, Check, Play, Pause, Volume2, MoreHorizontal, ChevronLeft, ChevronRight } from 'lucide-react';
 import { getPatientList} from '../services/getPatientList_ExecStoredProcedure';
 import { getDictation } from '../services/getDictation_ExecStoredProcedure';
 import { getSoapNotes } from '../services/getSoapNotes_ExecStoredProcedure';
-const VirtualAssistant: React.FC = () => {
+
+// Define the component props and ref interface
+interface VirtualAssistantProps {
+  updateWithApiResponse?: (response: any) => void;
+}
+
+// Define the ref interface
+export interface VirtualAssistantRef {
+  updateWithApiResponse: (response: any) => void;
+}
+
+// Define interfaces for SOAP note formats
+interface ApiSoapNote {
+  Subjective: Array<{
+    elementName: string;
+    note: any;
+  }>;
+  Objective: Array<{
+    elementName: string;
+    note: any;
+  }>;
+  Assessment: Array<{
+    note: any;
+  }>;
+  Plan: Array<{
+    note: any;
+  }>;
+}
+
+interface FormattedSoapNote {
+  Table: Array<{
+    ELEMENT_NAME: string;
+    NOTE: string;
+  }>;
+}
+
+// Change the component to properly use forwardRef with correct types
+const VirtualAssistant = forwardRef<VirtualAssistantRef, VirtualAssistantProps>((props, ref) => {
   const [patients, setPatients] = useState<any[]>([]);
   const [activePatient, setActivePatient] = useState<any>(null);
   const [dictation, setDictation] = useState<any>(null);
   const [soapNotes, setSoapNotes] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSoapLoading, setIsSoapLoading] = useState(false);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [consent, setConsent] = useState(true);
   const [isRightSidebarCollapsed, setRightSidebarCollapsed] = useState(false);
+  const [transcript, setTranscript] = useState<string | null>(null);
+  // Add a key to force re-rendering
+  const [updateKey, setUpdateKey] = useState(0);
 
   useEffect(() => {
     const fetchPatients = async () => {
@@ -49,11 +90,371 @@ const VirtualAssistant: React.FC = () => {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Helper function to format complex objects into readable text
+  const formatComplexObject = (obj: any, depth = 0): string => {
+    if (!obj || typeof obj !== 'object') {
+      return String(obj || '');
+    }
+    
+    // Handle arrays
+    if (Array.isArray(obj)) {
+      return obj.map(item => formatComplexObject(item, depth + 1)).join(', ');
+    }
+    
+    // Handle objects
+    const entries = Object.entries(obj);
+    if (entries.length === 0) return '';
+    
+    // For top-level objects, format more comprehensively
+    if (depth === 0) {
+      return entries
+        .map(([key, value]) => {
+          // Skip keys that are typically metadata or redundant
+          if (['Code', 'Diagnosis'].includes(key) && depth > 0) return '';
+          
+          const formattedValue = formatComplexObject(value, depth + 1);
+          if (!formattedValue) return '';
+          
+          // For nested objects, include the key
+          return `${key}: ${formattedValue}`;
+        })
+        .filter(Boolean)
+        .join('\n');
+    }
+    
+    // For nested objects, format more concisely
+    return entries
+      .map(([key, value]) => {
+        const formattedValue = formatComplexObject(value, depth + 1);
+        if (!formattedValue) return '';
+        
+        // Special case for diagnosis entries
+        if (key === 'Diagnosis' || key === 'Description') return formattedValue;
+        if (key === 'Code') return `(${formattedValue})`;
+        
+        // For laterality fields, format differently
+        if (key.includes('Laterality')) return `[${formattedValue}]`;
+        
+        // For notes fields, format with quotes
+        if (key.includes('Notes')) return `"${formattedValue}"`;
+        
+        // For boolean values represented as strings
+        if (formattedValue === 'True') return key;
+        if (formattedValue === 'False') return '';
+        
+        // Default formatting
+        return `${key}: ${formattedValue}`;
+      })
+      .filter(Boolean)
+      .join(', ');
+  };
+
+  // Function to convert API SOAP notes format to the display format
+  const convertSoapNotesFormat = (apiSoapNotes: ApiSoapNote): FormattedSoapNote => {
+    const formattedNotes: FormattedSoapNote = {
+      Table: []
+    };
+
+    // Process Subjective section
+    if (apiSoapNotes.Subjective && apiSoapNotes.Subjective.length > 0) {
+      let subjectiveNotes = '';
+      
+      // Process each element in the Subjective section
+      apiSoapNotes.Subjective.forEach(item => {
+        if (item.elementName === 'ChiefComplaint') {
+          if (typeof item.note === 'string') {
+            subjectiveNotes += `Chief Complaint: ${item.note}\n\n`;
+          } else if (item.note?.Complaint) {
+            subjectiveNotes += `Chief Complaint: ${item.note.Complaint}\n\n`;
+          }
+        } 
+        else if (item.elementName === 'HPI') {
+          if (typeof item.note === 'string') {
+            subjectiveNotes += `History of Present Illness: ${item.note}\n\n`;
+          } else if (item.note?.History) {
+            subjectiveNotes += `History of Present Illness: ${item.note.History}\n\n`;
+          }
+        }
+        else if (item.elementName === 'Current Eye Symptoms') {
+          subjectiveNotes += `Current Eye Symptoms:\n`;
+          
+          if (item.note?.Physiologic) {
+            subjectiveNotes += `- Physiologic: ${formatComplexObject(item.note.Physiologic)}\n`;
+          }
+          
+          if (item.note?.['Visual Symptoms']) {
+            subjectiveNotes += `- Visual Symptoms: ${formatComplexObject(item.note['Visual Symptoms'])}\n`;
+          }
+          
+          subjectiveNotes += '\n';
+        }
+        else if (item.elementName === 'Eye Diseases') {
+          subjectiveNotes += `Eye Diseases:\n${formatComplexObject(item.note)}\n\n`;
+        }
+        else if (item.elementName === 'Review Of Systems Brief' || item.elementName === 'Review Of Systems - Brief') {
+          subjectiveNotes += `Review Of Systems: ${formatComplexObject(item.note)}\n\n`;
+        }
+        else if (item.elementName === 'Problems') {
+          subjectiveNotes += `Problems:\n`;
+          if (Array.isArray(item.note)) {
+            item.note.forEach((problem, index) => {
+              subjectiveNotes += `${index + 1}. ${problem.Description || ''} (${problem.Code || ''}) - ${problem.Status || ''}\n`;
+            });
+          } else {
+            subjectiveNotes += formatComplexObject(item.note);
+          }
+          subjectiveNotes += '\n';
+        }
+        else {
+          // Generic handling for other elements
+          let noteText = '';
+          if (typeof item.note === 'string') {
+            noteText = item.note;
+          } else if (typeof item.note === 'object') {
+            noteText = formatComplexObject(item.note);
+          }
+          
+          if (noteText) {
+            subjectiveNotes += `${item.elementName}: ${noteText}\n\n`;
+          }
+        }
+      });
+      
+      formattedNotes.Table.push({
+        ELEMENT_NAME: "Subjective",
+        NOTE: subjectiveNotes.trim()
+      });
+    }
+
+    // Process Objective section
+    if (apiSoapNotes.Objective && apiSoapNotes.Objective.length > 0) {
+      let objectiveNotes = '';
+      
+      // Process each element in the Objective section
+      apiSoapNotes.Objective.forEach(item => {
+        if (item.elementName === 'Visual Acuity (VA)') {
+          objectiveNotes += `Visual Acuity:\n`;
+          if (item.note?.['With Correction']) {
+            const va = item.note['With Correction'];
+            objectiveNotes += `With Correction: `;
+            if (va.OD) objectiveNotes += `OD ${va.OD} `;
+            if (va.OS) objectiveNotes += `OS ${va.OS} `;
+            if (va.OU) objectiveNotes += `OU ${va.OU}`;
+            objectiveNotes += '\n\n';
+          }
+        }
+        else if (item.elementName === 'Refraction') {
+          objectiveNotes += `Refraction: ${typeof item.note === 'string' ? item.note : formatComplexObject(item.note)}\n\n`;
+        }
+        else if (item.elementName === 'Anterior Segment') {
+          objectiveNotes += `Anterior Segment:\n`;
+          
+          if (item.note?.OD) {
+            objectiveNotes += `OD (Right Eye):\n`;
+            Object.entries(item.note.OD).forEach(([key, value]) => {
+              objectiveNotes += `- ${key}: ${value}\n`;
+            });
+            objectiveNotes += '\n';
+          }
+          
+          if (item.note?.OS) {
+            objectiveNotes += `OS (Left Eye):\n`;
+            Object.entries(item.note.OS).forEach(([key, value]) => {
+              objectiveNotes += `- ${key}: ${value}\n`;
+            });
+            objectiveNotes += '\n';
+          }
+        }
+        else if (item.elementName === 'Posterior Segment') {
+          objectiveNotes += `Posterior Segment:\n`;
+          
+          if (item.note?.Methods) {
+            objectiveNotes += `Methods: ${Array.isArray(item.note.Methods) ? item.note.Methods.join(', ') : item.note.Methods}\n\n`;
+          }
+          
+          if (item.note?.Vitreous) {
+            objectiveNotes += `Vitreous:\n`;
+            if (item.note.Vitreous.OD) objectiveNotes += `- OD: ${item.note.Vitreous.OD}\n`;
+            if (item.note.Vitreous.OS) objectiveNotes += `- OS: ${item.note.Vitreous.OS}\n`;
+            objectiveNotes += '\n';
+          }
+          
+          if (item.note?.['Optic Nerve OD']) {
+            objectiveNotes += `Optic Nerve OD: ${formatComplexObject(item.note['Optic Nerve OD'])}\n`;
+          }
+          
+          if (item.note?.['Optic Nerve OS']) {
+            objectiveNotes += `Optic Nerve OS: ${formatComplexObject(item.note['Optic Nerve OS'])}\n`;
+          }
+          
+          if (item.note?.['Retina OD']) {
+            objectiveNotes += `Retina OD:\n`;
+            Object.entries(item.note['Retina OD']).forEach(([key, value]) => {
+              objectiveNotes += `- ${key}: ${value}\n`;
+            });
+          }
+          
+          if (item.note?.['Retina OS']) {
+            objectiveNotes += `Retina OS:\n`;
+            Object.entries(item.note['Retina OS']).forEach(([key, value]) => {
+              objectiveNotes += `- ${key}: ${value}\n`;
+            });
+          }
+          
+          objectiveNotes += '\n';
+        }
+        else {
+          // Generic handling for other elements
+          let noteText = '';
+          if (typeof item.note === 'string') {
+            noteText = item.note;
+          } else if (typeof item.note === 'object') {
+            noteText = formatComplexObject(item.note);
+          }
+          
+          if (noteText) {
+            objectiveNotes += `${item.elementName}: ${noteText}\n\n`;
+          }
+        }
+      });
+      
+      formattedNotes.Table.push({
+        ELEMENT_NAME: "Objective",
+        NOTE: objectiveNotes.trim()
+      });
+    }
+
+    // Process Assessment section
+    if (apiSoapNotes.Assessment && apiSoapNotes.Assessment.length > 0) {
+      const assessmentNote = apiSoapNotes.Assessment[0];
+      let assessmentText = '';
+      
+      // Add the assessment narrative if available
+      if (assessmentNote.note?.Assessment) {
+        assessmentText += `${assessmentNote.note.Assessment}\n\n`;
+      }
+      
+      // Add differential diagnoses if available
+      if (assessmentNote.note?.['Differential Diagnosis'] && Array.isArray(assessmentNote.note['Differential Diagnosis'])) {
+        assessmentText += 'Differential Diagnosis:\n';
+        assessmentNote.note['Differential Diagnosis'].forEach((diagnosis, index) => {
+          assessmentText += `${index + 1}. ${diagnosis.Diagnosis} (${diagnosis.Code})\n`;
+        });
+      }
+      
+      formattedNotes.Table.push({
+        ELEMENT_NAME: "Assessment",
+        NOTE: assessmentText.trim()
+      });
+    }
+
+    // Process Plan section
+    if (apiSoapNotes.Plan && apiSoapNotes.Plan.length > 0) {
+      const planNote = apiSoapNotes.Plan[0];
+      let planText = '';
+      
+      if (planNote.note?.Plan && Array.isArray(planNote.note.Plan)) {
+        planNote.note.Plan.forEach((item, index) => {
+          planText += `${index + 1}. ${item}\n`;
+        });
+      } else if (typeof planNote.note === 'object') {
+        planText = formatComplexObject(planNote.note);
+      }
+      
+      // Add recall information if available
+      if (planNote.note?.['Recall In']) {
+        planText += `\nRecall in: ${planNote.note['Recall In']}`;
+      }
+      
+      formattedNotes.Table.push({
+        ELEMENT_NAME: "Plan",
+        NOTE: planText.trim()
+      });
+    }
+
+    return formattedNotes;
+  };
+
+  // Expose the updateWithApiResponse method to parent components
+  useImperativeHandle(ref, () => ({
+    updateWithApiResponse: (response: any) => {
+      console.log("updateWithApiResponse called with:", response);
+      
+      // Update the transcript if available
+      if (response && (response.transcript || response.text)) {
+        const newTranscript = response.transcript || response.text;
+        console.log("Setting transcript:", newTranscript);
+        setTranscript(newTranscript);
+      }
+      
+      // Set SOAP notes loading state
+      setIsSoapLoading(true);
+      
+      // Process SOAP notes if they exist in the response
+      if (response && response.soap_note) {
+        try {
+          console.log("Processing soap_note from API response:", response.soap_note);
+          // Convert the API format to the display format
+          const formattedSoapNotes = convertSoapNotesFormat(response.soap_note);
+          console.log("Formatted SOAP notes:", formattedSoapNotes);
+          
+          // Create a completely new object to force React to detect the change
+          const newSoapNotes = {
+            Table: formattedSoapNotes.Table.map(note => ({
+              ELEMENT_NAME: note.ELEMENT_NAME,
+              NOTE: note.NOTE
+            }))
+          };
+          
+          console.log("Setting new SOAP notes:", newSoapNotes);
+          setSoapNotes(newSoapNotes);
+          
+          // Force a re-render by incrementing the key
+          setUpdateKey(prev => prev + 1);
+        } catch (error) {
+          console.error("Error processing SOAP notes:", error);
+        } finally {
+          setIsSoapLoading(false);
+        }
+      } else if (response && response.soapNotes) {
+        try {
+          // Parse the SOAP notes if they're a string
+          const soapData = typeof response.soapNotes === 'string' 
+            ? JSON.parse(response.soapNotes) 
+            : response.soapNotes;
+          
+          // Convert the API format to the display format
+          const formattedSoapNotes = convertSoapNotesFormat(soapData);
+          
+          // Create a completely new object to force React to detect the change
+          const newSoapNotes = {
+            Table: formattedSoapNotes.Table.map(note => ({
+              ELEMENT_NAME: note.ELEMENT_NAME,
+              NOTE: note.NOTE
+            }))
+          };
+          
+          console.log("Setting new SOAP notes:", newSoapNotes);
+          setSoapNotes(newSoapNotes);
+          
+          // Force a re-render by incrementing the key
+          setUpdateKey(prev => prev + 1);
+        } catch (error) {
+          console.error("Error processing SOAP notes:", error);
+        } finally {
+          setIsSoapLoading(false);
+        }
+      } else {
+        setIsSoapLoading(false);
+      }
+    }
+  }));
+
   const togglePlay = () => setIsPlaying(!isPlaying);
   const progressPercentage = (currentTime / (dictation?.durationSec || 1)) * 100;
 
   return (
-    <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center">
+    <div className="min-h-screen bg-gray-100 p-4 flex items-center justify-center" key={updateKey}>
       <div className="w-full max-w-7xl mx-auto bg-white rounded-2xl border-x-[12px] border-b-[12px] border-t-[24px] border-plum-900 shadow-lg">
         <div className="bg-gray-50 rounded-lg overflow-hidden">
           <div className="h-12 px-6 flex items-center justify-between bg-plum-900">
@@ -116,18 +517,29 @@ const VirtualAssistant: React.FC = () => {
                 </div>
               </div>
               <div className="space-y-4 h-[calc(100vh-238px)] overflow-y-auto pr-2" style={{ height: 'calc(100vh - 88px)' }}>
-                {isLoading ? (
-                  <p>Loading...</p>
+                {isLoading || isSoapLoading ? (
+                  <div className="flex flex-col items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                    <h2 className="text-xl font-bold text-center">Generating SOAP Notes</h2>
+                    <p className="text-center mt-2">
+                      It will take couple of seconds to generate SOAP Notes.<br />
+                      Either you can wait or jump straight into new recording.
+                    </p>
+                  </div>
                 ) : (
-                  soapNotes &&
-                  soapNotes.Table.map((note: any, index: number) => (
-                    <div key={index} className="flex items-start gap-3">
-                      <Send className="w-4 h-4 mt-1 flex-shrink-0 text-plum-500 -rotate-45" />
-                      <p className="text-sm text-gray-700">
-                        <span className="font-semibold text-gray-800">{note.ELEMENT_NAME}:</span> {note.NOTE}
-                      </p>
-                    </div>
-                  ))
+                  soapNotes && soapNotes.Table && soapNotes.Table.length > 0 ? (
+                    soapNotes.Table.map((note: any, index: number) => (
+                      <div key={`note-${index}-${updateKey}`} className="flex items-start gap-3">
+                        <Send className="w-4 h-4 mt-1 flex-shrink-0 text-plum-500 -rotate-45" />
+                        <div className="text-sm text-gray-700">
+                          <span className="font-semibold text-gray-800">{note.ELEMENT_NAME}:</span>
+                          <div className="whitespace-pre-wrap mt-1">{note.NOTE}</div>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center text-gray-500">No SOAP notes available</div>
+                  )
                 )}
               </div>
               <button
@@ -164,10 +576,13 @@ const VirtualAssistant: React.FC = () => {
               <div className="flex-1 p-4 space-y-4 overflow-y-auto">
                 {isLoading ? (
                   <p>Loading...</p>
+                ) : transcript ? (
+                  <p key={`transcript-${updateKey}`} className="text-sm text-gray-700 whitespace-pre-wrap">{transcript}</p>
                 ) : (
                   dictation &&
+                  dictation.Table1 &&
                   dictation.Table1.map((paragraph: any, index: number) => (
-                    <p key={index} className="text-sm text-gray-700">
+                    <p key={`dictation-${index}-${updateKey}`} className="text-sm text-gray-700">
                       {paragraph.TRANSCRIPTION}
                     </p>
                   ))
@@ -179,6 +594,6 @@ const VirtualAssistant: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 export default VirtualAssistant;

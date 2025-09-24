@@ -55,7 +55,15 @@ const DraggableInterface = () => {
           Open Virtual Assistant
         </button>
       </div>
-      {popOutWindow && ReactDOM.createPortal(<VirtualAssistant />, popOutWindow.document.body)}
+      {popOutWindow && ReactDOM.createPortal(
+        <VirtualAssistant
+          updateWithApiResponse={(response) => {
+            // Handle API response update
+            console.log('API Response:', response);
+          }}
+        />,
+        popOutWindow.document.body
+      )}
     </div>
   );
 };
