@@ -48,14 +48,13 @@ export function MedicalInterface({ liveTranscription = "" }: MedicalInterfacePro
   };
 
   return (
-    <div className="h-screen bg-gray-100 flex flex-col overflow-hidden border-x-[12px] border-b-[12px] border-t-[24px] border-plum-900 rounded-2xl">
-      <div className="h-12 px-6 flex items-center justify-between bg-plum-900">
-        <div className="flex items-center gap-1">
-          <span className="font-semibold text-base text-white">evaa</span>
-          <span className="font-semibold text-base text-white">SCRIBE</span>
+    <div className="h-screen w-fit flex flex-col overflow-hidden rounded-2xl">
+      <div className="h-14 px-2 flex items-center justify-between rounded-t-xl bg-[#63003C] flex-shrink-0">
+        <div className="flex items-center rounded-t-xl">
+          <img src="/eva-scribe-logo.png" alt="logo" className="w-30 h-10 rounded-t-xl" />
         </div>
       </div>
-      <div className="flex flex-1 bg-plum-900 gap-2 p-2 rounded-b-lg">
+      <div className="flex col-3 bg-[#63003C] gap-1.5 px-3 py-2 flex-grow overflow-hidden">
         <PatientListSidebar
           isCollapsed={isSidebarCollapsed}
           onToggleCollapse={toggleSidebar}
@@ -64,14 +63,14 @@ export function MedicalInterface({ liveTranscription = "" }: MedicalInterfacePro
           refreshList={refreshList}
           setRefreshList={setRefreshList}
         />
-        
+
         <MedicalRecordView
           selectedPatient={selectedPatient}
           soapNotes={soapNotes}
           setSoapNotes={setSoapNotes}
           setRefreshList={setRefreshList}
         />
-        
+
         <AudioTranscriptPanel
           dictation={dictation}
           selectedPatient={selectedPatient}

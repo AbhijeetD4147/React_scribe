@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { ChevronRightIcon, ChevronLeftIcon, FileTextIcon, SendHorizonal, SearchIcon, CheckCircle2, Files, FileDown, AlertCircle, Mic } from "lucide-react";
+import { ChevronRightIcon, ChevronLeftIcon, FileTextIcon, Send, SearchIcon, CheckCircle2, Files, FileDown, AlertCircle, Mic } from "lucide-react";
 import { sendSoapNoteToMaximeyes } from "../services/sendSoapNotesToMaximeyes";
 import { Input } from "@/components/ui/input";
 import { useMemo, useState, useRef, useEffect } from "react";
@@ -66,7 +66,7 @@ const NoteRenderer = ({ data, searchTerm }: { data: any, searchTerm: string }) =
       <div className="space-y-1">
         {Object.entries(data).map(([key, value]) => {
           const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
-          
+
           return (
             <div key={key} className="text-base text-black">
               <span className="font-semibold">{highlightText(formattedKey, searchTerm)}: </span>
@@ -218,86 +218,140 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
       console.error(error);
     }
   };
- 
+
   return (
-    <div className="flex-1 bg-white flex flex-col h-full relative rounded-lg" style={{ height: 'calc(100vh - 88px)' }}>
+    <div className="flex-1 bg-[#F2F1ED] flex flex-col h-full relative rounded-sm">
       {/* Header */}
-      <div className="h-[88px] p-4 flex flex-col justify-center">
-        <div className="flex items-start justify-between mb-4">
+      <div className="h-[88px] px-4 flex flex-col justify-center border-b border-plum-600">
+        <div className="flex items-start justify-between">
           <div>
             <div className="flex items-baseline gap-2">
-              <h2 className="text-base font-bold text-gray-800">{selectedPatient?.PATIENT_NAME}</h2>
-              <span className="text-sm text-gray-500">{selectedPatient ? new Date(selectedPatient.DOB).toLocaleDateString() : ''}</span>
+              <h2 className="text-md font-bold text-gray-800">{selectedPatient?.PATIENT_NAME}</h2>
+              <span className="text-sm text-gray-600">{selectedPatient ? new Date(selectedPatient.DOB).toLocaleDateString() : ''}</span>
             </div>
-            <div className="text-xs text-gray-500 mt-1">
+            <div className="text-xs text-gray-600 mt-1">
               <span>Pt ID: {selectedPatient?.PATIENT_ID}</span> | <span>Enc ID: {selectedPatient?.ENCOUNTER_ID}</span> | <span>Prov: {selectedPatient?.PROVIDER_NAME}</span>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Search in notes..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-8 pr-2 py-1 h-8 text-sm"
-              />
-              <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500" />
-            </div>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={handleCopy}>
-                    <Files className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Copy All Notes</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={handleDownload}>
-                    <FileDown className="w-5 h-5" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Download as PDF</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
+          <div className="flex items-center gap-1">
             {isFinalized ? (
-              <div className="flex items-center gap-2 px-3 py-1 rounded-full bg-green-100 border border-green-400">
-                <CheckCircle2 className="w-4 h-4 text-green-600" />
-                <span className="text-xs font-medium text-green-700">FINALIZED</span>
-              </div>
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={handleCopy}>
+                        <Files className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy All Notes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={handleDownload}>
+                        <FileDown className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download as PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes}>
+                        <Send className="w-6 h-6" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Send to MaximEyes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <div className="relative w-[80px]">
+                  <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 bg-[#F2F1ED]" />
+                  <Input
+                    type="text"
+                    placeholder="Search"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-6 pr-1 py-1 h-8 text-sm border border-plum-600 rounded-sm bg-[#F2F1ED]"
+                  />
+
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 bg-green-600 hover:bg-green-700 rounded-sm text-md"
+                >
+                  <CheckCircle2 className="w-5 h-5 text-white" />
+                  Finalized
+                </Button>
+              </>
             ) : (
-              <Button
-                size="sm"
-                className="h-8 bg-green-600 hover:bg-green-700"
-                onClick={async () => {
-                  if (selectedPatient) {
-                    const success = await updateFinalizeStatus(selectedPatient.RECORDING_ID, true);
-                    if (success) {
-                      setIsFinalized(true);
-                      onStatusChange?.();
-                      toast.success("Status updated to Finalized!");
-                    } else {
-                      toast.error("Failed to update status.");
+              <>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={handleCopy}>
+                        <Files className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Copy All Notes</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={handleDownload}>
+                        <FileDown className="w-5 h-5" />
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent>
+                      <p>Download as PDF</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+                <div className="relative w-[80px]">
+                  <SearchIcon className="absolute left-2 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 bg-[#F2F1ED]" />
+                  <Input
+                    type="text"
+                    placeholder="Search"
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-6 pr-1 py-1 h-8 text-sm border border-plum-600 rounded-sm bg-[#F2F1ED]"
+                  />
+
+                </div>
+                <Button
+                  size="sm"
+                  className="h-8 bg-blue-700 hover:bg-blue-800 rounded-sm text-md"
+                  onClick={async () => {
+                    if (selectedPatient) {
+                      const success = await updateFinalizeStatus(selectedPatient.RECORDING_ID, true);
+                      if (success) {
+                        setIsFinalized(true);
+                        onStatusChange?.();
+                        toast.success("Status updated to Finalized!");
+                      } else {
+                        toast.error("Failed to update status.");
+                      }
                     }
-                  }
-                }}
-              >
-                <CheckCircle2 className="w-4 h-4 mr-2" />
-                Finalize
-              </Button>
+                  }}
+                >
+                  <AlertCircle className="w-5 h-5 " />
+                  Finalize?
+                </Button>
+              </>
             )}
           </div>
         </div>
       </div>
-
       {/* Content */}
       <ScrollArea className="flex-1 h-0">
         <button
@@ -374,7 +428,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes(item)}>
-                                    <SendHorizonal className="w-6 h-6" />
+                                    <Send className="w-6 h-6" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -434,7 +488,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes(item)}>
-                                    <SendHorizonal className="w-6 h-6" />
+                                    <Send className="w-6 h-6" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -489,7 +543,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes({ elementName: 'Assessment', note: notes.Assessment.map((i: any) => i.note) })}>
-                                <SendHorizonal className="w-6 h-6" />
+                                <Send className="w-6 h-6" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -548,7 +602,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes({ elementName: 'Plan', note: notes.Plan.map((i: any) => i.note) })}>
-                                <SendHorizonal className="w-6 h-6" />
+                                <Send className="w-6 h-6" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -607,7 +661,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes({ elementName: 'Prescribed_Medicines', note: notes.Prescribed_Medicines.map((i: any) => i.note) })}>
-                                <SendHorizonal className="w-6 h-6" />
+                                <Send className="w-6 h-6" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -628,7 +682,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes(item)}>
-                                    <SendHorizonal className="w-6 h-6" />
+                                    <Send className="w-6 h-6 text-white fill-plum-600" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>
@@ -683,7 +737,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                           <Tooltip>
                             <TooltipTrigger asChild>
                               <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes({ elementName: 'Suggested_Tests', note: notes.Suggested_Tests.map((i: any) => i.note) })}>
-                                <SendHorizonal className="w-6 h-6" />
+                                <Send className="w-6 h-6" />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
@@ -704,7 +758,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
                               <Tooltip>
                                 <TooltipTrigger asChild>
                                   <Button variant="ghost" size="icon" className="h-8 w-8 text-gray-600" onClick={() => handleSendToMaximeyes(item)}>
-                                    <SendHorizonal className="w-6 h-6" />
+                                    <Send className="w-6 h-6" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>

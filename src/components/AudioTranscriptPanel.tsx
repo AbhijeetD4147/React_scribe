@@ -1,7 +1,7 @@
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
-import { PlayIcon, PauseIcon, VolumeXIcon, MoreVerticalIcon, RefreshCwIcon, UndoIcon, Download, PanelRightClose } from "lucide-react";
+import { PlayIcon, PauseIcon, VolumeXIcon, MoreVerticalIcon, RefreshCwIcon, UndoIcon, Download, PanelRightClose, VolumeIcon } from "lucide-react";
 import { Slider } from "@/components/ui/slider";
 import { useState, useMemo, useEffect, useRef } from "react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
@@ -60,25 +60,25 @@ export function AudioTranscriptPanel({
   }, [dictation]);
 
   return (
-    <div className={`${isCollapsed ? "w-0" : "w-[350px]"} bg-gray-50 flex flex-col rounded-lg overflow-hidden transition-all duration-300 ease-in-out audio-transcript-panel border-l border-plum-600`} style={{ height: 'calc(100vh - 88px)' }}>
+    <div className={`${isCollapsed ? "w-0" : "w-[350px]"} bg-gray-50 flex flex-col rounded-sm overflow-hidden transition-all duration-300 ease-in-out audio-transcript-panel border-l border-plum-600`}>
       {isCollapsed ? null : (
         <>
           {/* Header */}
-          <div className="p-4 bg-plum-500">
+          <div className="p-4 bg-[#b80e74]">
             <div className="flex items-center justify-between mb-3">
-              <h3 className="text-base font-bold text-white">
+              <h3 className="text-base font-bold text-white text-xl">
                 {isLiveMode ? 'Live Transcription' : (dictation?.Table?.[0]?.DICTATION_NAME || 'Transcript')}
               </h3>
-              <span className="text-xs text-white">
+              <span className="text-md text-white">
                 {isLiveMode ? new Date().toLocaleDateString() : (dictation?.Table?.[0] ? new Date(dictation.Table[0].CREATED_DATE).toLocaleDateString() : '')}
               </span>
             </div>
             {/* Rest of header content */}
             <div className="flex items-center gap-2 mb-3">
               <Checkbox id="patient-consent" />
-              <label htmlFor="patient-consent" className="text-xs text-white">Patient Consent Received?</label>
+              <label htmlFor="patient-consent" className="text-md text-white">Patient Consent Received?</label>
             </div>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 bg-white rounded-full px-3 py-2">
               <Button
                 size="sm"
                 variant="outline"
@@ -86,19 +86,19 @@ export function AudioTranscriptPanel({
                 className="w-8 h-8 bg-white rounded-full flex items-center justify-center"
                 disabled={isLiveMode}
               >
-                {isPlaying ? <PauseIcon className="w-4 h-4 text-plum-500" /> : <PlayIcon className="w-4 h-4 ml-0.5 text-plum-500" />}
+                {isPlaying ? <PauseIcon className="w-4 h-4 text-black fill-black" /> : <PlayIcon className="w-4 h-4 ml-0.5 text-black fill-black" />}
               </Button>
-              <span className="text-xs text-white">{Math.floor(currentTime)}:{(currentTime % 1 * 60).toFixed(0).padStart(2, '0')} / 29:52</span>
-              <div className="flex-1 bg-white/30 rounded-full h-1.5">
-                <div className="bg-white h-full rounded-full" style={{ width: `${(currentTime / totalTime) * 100}%` }} />
+              <span className="text-xs text-black">{Math.floor(currentTime)}:{(currentTime % 1 * 60).toFixed(0).padStart(2, '0')} / 29:52</span>
+              <div className="flex-1 bg-gray-50 rounded-full h-1.5">
+                <div className="bg-black h-full rounded-full" style={{ width: `${(currentTime / totalTime) * 100}%` }} />
               </div>
-              <VolumeXIcon className="w-4 h-4 text-white" />
-              <MoreVerticalIcon className="w-4 h-4 text-white" />
+              <VolumeIcon className="w-4 h-4 text-black" />
+              <MoreVerticalIcon className="w-4 h-4 text-black" />
             </div>
           </div>
 
           {/* Transcript */}
-          <div className="flex-1 h-0">
+          <div className="flex-1 h-0 bg-[#F2F1ED]">
             <ScrollArea className="h-full" ref={scrollAreaRef}>
               <div className="p-4">
                 {isLiveMode ? (

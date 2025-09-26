@@ -3,7 +3,7 @@ import { DateRange } from "react-day-picker";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Input } from "@/components/ui/input";
-import { CalendarIcon, PanelLeftClose, PanelRightClose, Menu, CheckCircle, AlertCircle } from "lucide-react";
+import { CalendarIcon, PanelLeftClose, PanelRightClose, Menu, CircleCheck, AlertCircle } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { format, subDays, subMonths } from "date-fns";
@@ -29,14 +29,14 @@ interface PatientListSidebarProps {
   onSelectPatient?: (patient: Patient) => void;
 }
 
-export function PatientListSidebar({ 
-  selectedPatient, 
-  onPatientSelect, 
-  isCollapsed, 
-  onToggleCollapse, 
+export function PatientListSidebar({
+  selectedPatient,
+  onPatientSelect,
+  isCollapsed,
+  onToggleCollapse,
   refreshList,
   setRefreshList,
-  onSelectPatient 
+  onSelectPatient
 }: PatientListSidebarProps) {
   const [date, setDate] = useState<DateRange | undefined>({
     from: subDays(new Date(), 6),
@@ -74,7 +74,7 @@ export function PatientListSidebar({
         setIsInitialLoad(false);
       }
     };
-  
+
     fetchPatients();
   }, [date, refreshList, selectedPatient, onPatientSelect, onSelectPatient]);
 
@@ -85,7 +85,7 @@ export function PatientListSidebar({
   };
 
   return (
-    <div className={`${isCollapsed ? "w-12" : "w-64"} bg-gray-50 flex flex-col h-full transition-all duration-300 rounded-lg border-r border-plum-600`} style={{ height: 'calc(100vh - 88px)' }}>
+    <div className={`${isCollapsed ? "w-12" : "w-50"} bg-gray-50 flex flex-col h-full transition-all duration-300 rounded-sm`}>
       {isCollapsed ? (
         <div className="flex flex-col items-center py-4">
           <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="text-plum-500">
@@ -95,7 +95,7 @@ export function PatientListSidebar({
       ) : (
         <>
           {/* Header */}
-          <div className="h-[88px] p-4 flex flex-col justify-center">
+          <div className="h-[80px] px-2 flex flex-col rounded-t-sm justify-center bg-[#F2F1ED] pb-4 pt-1">
             <div className="flex items-center justify-between mb-2">
               <h2 className="text-lg font-bold text-gray-800">Patients</h2>
               <Button variant="ghost" size="icon" onClick={onToggleCollapse} className="text-plum-500">
@@ -106,14 +106,15 @@ export function PatientListSidebar({
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
-                  className="w-full justify-start text-left font-normal h-9"
+                  className="w-full justify-start text-left font-normal h-9 border-plum-500 rounded-sm"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+
                   {date?.from && date.to ? (
                     `${format(date.from, "LLL dd, y")} - ${format(date.to, "LLL dd, y")}`
                   ) : (
                     <span>Pick a date</span>
                   )}
+                  <CalendarIcon className="ml-3 h-4 w-4 text-plum-500" />
                 </Button>
               </PopoverTrigger>
               <PopoverContent className="w-auto p-0" align="start">
@@ -142,7 +143,7 @@ export function PatientListSidebar({
 
           {/* Patient List */}
           <ScrollArea className="flex-1 h-0">
-            <div className="p-2">
+            <div className=" border-t border-plum-600">
               {isLoading ? (
                 <div className="p-4 text-center">Loading...</div>
               ) : (
@@ -150,8 +151,8 @@ export function PatientListSidebar({
                   // In the patient list rendering
                   <div
                     key={patient.RECORDING_ID}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer ${selectedPatient?.RECORDING_ID === patient.RECORDING_ID ? 'bg-white shadow-md' : 'hover:bg-white/60'}`}
-                    style={{ borderLeft: selectedPatient?.RECORDING_ID === patient.RECORDING_ID ? '4px solid #9D4EDD' : '4px solid transparent' }}
+                    className={`flex items-center justify-between p-2 cursor-pointer border-b border-plum-600 ${selectedPatient?.RECORDING_ID === patient.RECORDING_ID ? 'bg-[#d6d6d4]' : 'bg-[#F2F1ED] hover:bg-white/60'}`}
+                    // style={{ borderLeft: selectedPatient?.RECORDING_ID === patient.RECORDING_ID ? '4px solid #63003C' : '4px solid transparent' }}
                     onClick={() => {
                       // Use onSelectPatient if available, otherwise fall back to onPatientSelect
                       if (onSelectPatient) {
@@ -162,10 +163,10 @@ export function PatientListSidebar({
                     }}
                   >
                     <div>
-                      <div className="font-semibold text-sm text-gray-800">{patient.PATIENT_NAME}</div>
-                      <div className="text-xs text-gray-500">{new Date(patient.DOB).toLocaleDateString()}</div>
+                      <div className="font-semibold text-md text-gray-800">{patient.PATIENT_NAME}</div>
+                      <div className="text-sm text-gray-600">{new Date(patient.DOB).toLocaleDateString()}</div>
                     </div>
-                    {patient.IS_FINALIZED ? <CheckCircle className="w-5 h-5 text-green-500" /> : <AlertCircle className="w-5 h-5 text-orange-400" />}
+                    {patient.IS_FINALIZED ? <CircleCheck className="w-6 h-6 text-white fill-green-600" /> : <AlertCircle className="w-6 h-6 text-white fill-orange-400" />}
                   </div>
                 ))
               )}
@@ -174,7 +175,7 @@ export function PatientListSidebar({
 
           {/* Footer */}
           <div className="p-3">
-            <div className="bg-plum-500 text-white p-2 rounded text-center text-sm font-medium">
+            <div className="bg-blue-50 text-gray-700 text-center underline text-sm font-medium">
               EVAA Secure & Compliant
             </div>
           </div>

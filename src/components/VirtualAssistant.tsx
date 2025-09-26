@@ -151,18 +151,17 @@ const VirtualAssistant = forwardRef<VirtualAssistantRef, VirtualAssistantProps>(
 
   // Change the main container div to be more responsive
   return (
-    <div className="bg-gray-100 p-4 flex items-center justify-center w-full h-full" key={updateKey}>
-      <div className="w-full h-full bg-white rounded-2xl border-x-[12px] border-b-[12px] border-t-[24px] border-plum-900 shadow-lg overflow-hidden">
-        <div className="bg-gray-50 rounded-lg overflow-hidden h-full flex flex-col">
-          <div className="h-12 px-6 flex items-center justify-between bg-plum-900 flex-shrink-0">
-            <div className="flex items-center gap-1">
-              <span className="font-semibold text-base text-white">evaa</span>
-              <span className="font-semibold text-base text-white">SCRIBE</span>
+    <div className="flex items-center justify-center w-full h-full rounded-xl" key={updateKey}>
+      <div className="w-full h-full">
+        <div className="overflow-hidden h-full flex flex-col">
+          <div className="h-14 px-2 flex items-center justify-between rounded-t-xl bg-[#63003C] flex-shrink-0">
+            <div className="flex items-center rounded-t-xl">
+              <img src="/eva-scribe-logo.png" alt="logo" className="w-30 h-10 rounded-t-xl" />
             </div>
           </div>
-          <div className="flex bg-plum-900 gap-2 p-2 rounded-b-lg flex-grow overflow-hidden">
+          <div className="flex bg-[#63003C] gap-1.5 px-3 py-2 flex-grow overflow-hidden">
             {/* Left Pane */}
-            <div className="w-[280px] bg-gray-50 p-4 rounded-lg border-r border-plum-600 overflow-y-auto">
+            <div className="w-[280px] bg-gray-50 p-4 rounded-sm overflow-y-auto">
               <div className="flex items-center justify-between p-2 mb-4 rounded-lg border border-plum-200">
                 <div className="flex items-center gap-2">
                   <Calendar className="w-4 h-4 text-gray-500" />

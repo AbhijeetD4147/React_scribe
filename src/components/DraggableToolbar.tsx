@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Upload, Square, Expand, Minimize2, Mic, Pause, GripVertical, Play } from "lucide-react";
+import { Upload, Square, Expand, Minimize2, Mic, Pause, Play, GripHorizontal } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { MedicalInterface } from "./MedicalInterface";
 import { toast } from "@/components/ui/sonner";
@@ -262,8 +262,8 @@ export function DraggableToolbar() {
   const popupLeft = Math.max(20, Math.min(position.x - popupWidth - 20, windowSize.width - popupWidth - 20));
   const popupTop = Math.max(20, Math.min(position.y, windowSize.height - popupHeight - 20));
   const expandedToolbarPosition = {
-    x: popupLeft + popupWidth + 10,
-    y: popupTop + 10
+    x: popupLeft + popupWidth -50,
+    y: popupTop + 25
   };
 
   return (
@@ -290,7 +290,7 @@ export function DraggableToolbar() {
           willChange: isDragging ? 'transform' : 'auto',
         }}
       >
-        <div className={`h-full w-full bg-white border-2 border-primary/40 rounded-lg shadow-2xl transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 scale-90' : 'opacity-0 scale-95'
+        <div className={`h-full w-full  rounded-lg transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 scale-90' : 'opacity-0 scale-95'
           }`}>
           {audioResponse ? (
             <VirtualAssistant ref={virtualAssistantRef} />
@@ -312,67 +312,67 @@ export function DraggableToolbar() {
         }}
         onMouseDown={!isAnimating ? handleMouseDown : undefined}
       >
-        <div className="bg-primary/10 rounded-full shadow-lg border border-primary/20 p-2 flex flex-col items-center gap-2 w-16 transition-all duration-300 ease-in-out">
+        <div className="bg-[#b80e74] rounded-full shadow-lg border p-2 flex flex-col items-center gap-2 w-16 transition-all duration-300 ease-in-out">
           <Button
             variant="ghost"
             size="icon"
             className="w-10 h-10 p-0 hover:bg-primary/20 rounded-full transition-colors cursor-grab active:cursor-grabbing"
           >
-            <GripVertical className="w-5 h-5 text-gray-600" />
+            <GripHorizontal className="w-10 h-10 text-white" />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="w-10 h-10 p-0 bg-white hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
+            className="w-10 h-10 p-0 bg-[#b80e74] hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
             onClick={handleFileUpload}
             disabled={isLoading}
           >
-            <Upload className="w-5 h-5 text-gray-700" />
+            <Upload className="w-5 h-5 text-white" />
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="w-10 h-10 p-0 bg-white hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
+            className="w-10 h-10 p-0 bg-[#b80e74] hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
             onClick={handleRecordingToggle}
           >
             {isRecording ? (
               <Square className="w-5 h-5 text-red-500 fill-red-500" />
             ) : (
-              <Mic className="w-5 h-5 text-gray-700" />
+              <Mic className="w-5 h-5 text-white" />
             )}
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className={`w-10 h-10 p-0 bg-white border border-gray-300 rounded-lg transition-all duration-200 shadow-sm ${!isRecording
-              ? 'opacity-50 cursor-not-allowed hover:bg-white hover:border-gray-300'
+            className={`w-10 h-10 p-0 bg-[#b80e74] border border-gray-300 rounded-lg transition-all duration-200 shadow-sm ${!isRecording
+              ? 'opacity-50 cursor-not-allowed hover:bg-[#b80e74] hover:border-gray-300'
               : 'hover:bg-primary/10 hover:border-primary/40'
               }`}
             onClick={handlePauseToggle}
             disabled={!isRecording}
           >
             {isPaused ? (
-              <Play className="w-5 h-5 text-green-600" />
+              <Play className="w-5 h-5 text-white fill-white" />
             ) : (
-              <Pause className="w-5 h-5 text-gray-700" />
+              <Pause className="w-5 h-5 text-white fill-white" />
             )}
           </Button>
 
           <Button
             variant="ghost"
             size="icon"
-            className="w-10 h-10 p-0 bg-white hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
+            className="w-10 h-10 p-0 bg-[#b80e74] hover:bg-primary/10 border border-gray-300 hover:border-primary/40 rounded-lg transition-all duration-200 shadow-sm"
             onClick={handleExpandToggle}
             disabled={isAnimating}
           >
             <div className={`transition-all duration-300 ease-in-out ${isAnimating ? 'scale-110 rotate-12' : 'scale-100 rotate-0'}`}>
               {isExpanded ? (
-                <Minimize2 className="w-5 h-5 text-gray-700" />
+                <Minimize2 className="w-5 h-5 text-white fill-white" />
               ) : (
-                <Expand className="w-5 h-5 text-gray-700" />
+                <Expand className="w-5 h-5 text-white fill-white" />
               )}
             </div>
           </Button>
