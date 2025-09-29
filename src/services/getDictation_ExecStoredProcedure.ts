@@ -1,14 +1,14 @@
 import axios from "axios";
-import { Auth_Api } from "../Comman/Constants";
+import { Apipath } from "../Comman/Constants";
 import { getAuthToken } from "./authenticate_api";
 
 export const getDictation = async (recordingId: number): Promise<any | null> => {
-  const token = await getAuthToken();
+  const token = Apipath.token;
   if (!token) {
     console.error("Authentication failed.");
     return null;
   }
-//   const url = `${Auth_Api}/api/common/ExecStoredProcedure`;
+//   const url = `${Apipath.Auth_Api}/api/common/ExecStoredProcedure`;
   const url = "/api/common/ExecStoredProcedure";
   const body = {
     ProcedureName: "AIS_GET_AIS_DICTATION",

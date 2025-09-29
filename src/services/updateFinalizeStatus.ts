@@ -1,8 +1,8 @@
 import axios from "axios";
-import { Auth_Api } from "../Comman/Constants";
+import { Apipath } from "../Comman/Constants";
 
 export const updateFinalizeStatus = async (recordingId: number, isFinalized: boolean): Promise<any | null> => {
-  // const url =`${Auth_Api}/e1/DemoScribe/SAuLpR/Patient/UpsertRecording?RECORDING_ID=${recordingId}&IsFinalize=${isFinalized}`;
+  // const url =`${Apipath.Auth_Api}/e1/DemoScribe/SAuLpR/Patient/UpsertRecording?RECORDING_ID=${recordingId}&IsFinalize=${isFinalized}`;
 
   const url = `/e1/DemoScribe/SAuLpR/Patient/UpsertRecording?RECORDING_ID=${recordingId}&IsFinalize=${isFinalized}`;
 

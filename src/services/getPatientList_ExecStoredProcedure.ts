@@ -1,17 +1,18 @@
 import axios from "axios";
-import { Auth_Api } from "../Comman/Constants";
+import { Apipath } from "../Comman/Constants";
 import { getAuthToken } from "./authenticate_api";
+import { tokenService } from "./tokenService";
 
-
-export const getPatientList = async (startDate: string, endDate: string): Promise<{ Table: any[] } | null> => {
-  const token = await getAuthToken();
+ let token = Apipath.token;
   if (!token) {
     console.error("Authentication failed.");
-    return null;
+    token = await tokenService.getTokenOnLoad();
+    
   }
 
-//   const url =`${Auth_Api}/api/common/ExecStoredProcedure`;
-  const url = "/api/common/ExecStoredProcedure";
+export const getPatientList = async (startDate: string, endDate: string): Promise<{ Table: any[] } | null> => {
+  const url =`${Apipath.Auth_Api}/api/common/ExecStoredProcedure`;
+  // const url = "/api/common/ExecStoredProcedure";
   const body = {
     ProcedureName: "AIS_GET_AIS_RECORDINGS",
     Parameters: [
@@ -34,18 +35,20 @@ export const getPatientList = async (startDate: string, endDate: string): Promis
   };
 
   try {
-    const response = await axios.post(url,body ,{
+    const response = await axios.post(url,body,{
+      // params: body,
     // const response = await fetch(url, {
-    //   method: "POST",
+      // method: "POST",
       headers: {
         "Content-Type": "application/json",
         apiKey: `Bearer ${token}`
       },
-    //   body: JSON.stringify(body),
+      // body: JSON.stringify(body),
     });
 
     if (response.status == 200) {
-       const data = await response.data;
+      //  const data = await response.json();
+      const data = await response.data;
     return data ;
     }else if(response.status === 401){
         await getAuthToken();

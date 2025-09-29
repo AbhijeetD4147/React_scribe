@@ -30,6 +30,12 @@ export default defineConfig(({ mode }) => ({
         secure: false,
         rewrite: (path) => path.replace(/^\/transcription-ws/, '')
       },
+      '/token-api': {
+        target: 'https://aiscribeqa.maximeyes.com:444',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/token-api/, '')
+      },
     },
   },
   plugins: [
