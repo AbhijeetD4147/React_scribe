@@ -6,7 +6,6 @@ import Index from "./pages/Index";
 import FullScreenMedical from "./pages/FullScreenMedical";
 import DraggableInterface from "./pages/DraggableInterface";
 import NotFound from "./pages/NotFound";
-import VirtualAssistant from "./components/VirtualAssistant";
 
 const queryClient = new QueryClient();
 

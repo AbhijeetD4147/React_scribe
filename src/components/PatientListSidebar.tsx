@@ -164,7 +164,7 @@ export function PatientListSidebar({
                   >
                     <div>
                       <div className="font-semibold text-md text-gray-800">{patient.PATIENT_NAME}</div>
-                      <div className="text-sm text-gray-600">{new Date(patient.DOB).toLocaleDateString()}</div>
+                      <div className="text-sm text-gray-600">{new Date(patient.DOB).toLocaleDateString()} | {new Date(patient.RECORDING_DATE).toLocaleDateString()}</div>
                     </div>
                     {patient.IS_FINALIZED ? <CircleCheck className="w-6 h-6 text-white fill-green-600" /> : <AlertCircle className="w-6 h-6 text-white fill-orange-400" />}
                   </div>

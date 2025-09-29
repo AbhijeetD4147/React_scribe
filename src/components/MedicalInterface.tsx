@@ -5,6 +5,7 @@ import { MedicalRecordView } from "./MedicalRecordView";
 import { AudioTranscriptPanel } from "./AudioTranscriptPanel";
 import { getDictation } from "../services/getDictation_ExecStoredProcedure";
 import { getSoapNotes } from "../services/getSoapNotes_ExecStoredProcedure";
+import { useAudioResponseStore } from "../services/audioUploadApi";
 
 interface MedicalInterfaceProps {
   liveTranscription?: string;
@@ -18,9 +19,15 @@ export function MedicalInterface({ liveTranscription = "" }: MedicalInterfacePro
   const [soapNotes, setSoapNotes] = useState<any>(null);
   const [refreshList, setRefreshList] = useState(false);
 
+  // Get store data
+  const { response, reset } = useAudioResponseStore();
+
   useEffect(() => {
     const fetchData = async () => {
       if (selectedPatient) {
+        // Clear store data when selecting a different patient
+        reset();
+        
         setDictation(null);
         setSoapNotes(null);
 
@@ -37,7 +44,7 @@ export function MedicalInterface({ liveTranscription = "" }: MedicalInterfacePro
     };
 
     fetchData();
-  }, [selectedPatient]);
+  }, [selectedPatient, reset]);
 
   const toggleSidebar = () => {
     setIsSidebarCollapsed(!isSidebarCollapsed);

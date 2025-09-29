@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import ReactDOM from 'react-dom';
 import { DraggableToolbar } from "@/components/DraggableToolbar";
-import VirtualAssistant from '@/components/VirtualAssistant';
+import { MedicalInterface } from "@/components/MedicalInterface";
 
 const DraggableInterface = () => {
   const [popOutWindow, setPopOutWindow] = useState<Window | null>(null);
@@ -10,7 +10,7 @@ const DraggableInterface = () => {
     // Increase window size for better visibility
     const newWindow = window.open('', '_blank', 'width=1400,height=900');
     if (newWindow) {
-      newWindow.document.title = 'Virtual Assistant';
+      newWindow.document.title = 'Medical Interface';
       
       // Add base styling to ensure proper scaling
       const styleEl = newWindow.document.createElement('style');
@@ -22,7 +22,7 @@ const DraggableInterface = () => {
           overflow: hidden;
           background-color: #f9fafb;
         }
-        #virtual-assistant-container {
+        #medical-interface-container {
           width: 100%;
           height: 100%;
           display: flex;
@@ -36,7 +36,7 @@ const DraggableInterface = () => {
           min-height: unset !important;
         }
         /* Scale the component to fit the window */
-        .virtual-assistant-wrapper {
+        .medical-interface-wrapper {
           transform: scale(0.9);
           transform-origin: center center;
           width: 100%;
@@ -63,11 +63,11 @@ const DraggableInterface = () => {
       
       // Create a container with proper structure
       const appRoot = newWindow.document.createElement('div');
-      appRoot.id = 'virtual-assistant-container';
+      appRoot.id = 'medical-interface-container';
       
       // Create a wrapper for scaling
       const wrapper = newWindow.document.createElement('div');
-      wrapper.className = 'virtual-assistant-wrapper';
+      wrapper.className = 'medical-interface-wrapper';
       
       appRoot.appendChild(wrapper);
       newWindow.document.body.appendChild(appRoot);
@@ -100,17 +100,14 @@ const DraggableInterface = () => {
           onClick={handlePopOut}
           className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
         >
-          Open Virtual Assistant
+          Open Medical Interface
         </button>
       </div>
       {popOutWindow && ReactDOM.createPortal(
-        <VirtualAssistant
-          updateWithApiResponse={(response) => {
-            // Handle API response update
-            console.log('API Response:', response);
-          }}
+        <MedicalInterface
+          liveTranscription=""
         />,
-        popOutWindow.document.querySelector('.virtual-assistant-wrapper') || 
+        popOutWindow.document.querySelector('.medical-interface-wrapper') || 
         popOutWindow.document.body
       )}
     </div>

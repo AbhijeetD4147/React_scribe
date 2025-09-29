@@ -5,7 +5,6 @@ import { MedicalInterface } from "./MedicalInterface";
 import { toast } from "@/components/ui/sonner";
 import { uploadAudioFile, useAudioResponseStore } from "@/services/audioUploadApi";
 import { startTranscription, stopTranscription } from "@/services/transcriptionWebSocket";
-import VirtualAssistant, { VirtualAssistantRef } from "./VirtualAssistant";
 
 interface Position {
   x: number;
@@ -30,7 +29,6 @@ export function DraggableToolbar() {
   const toolbarRef = useRef<HTMLDivElement>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const virtualAssistantRef = useRef<VirtualAssistantRef>(null);
   
   // Get data from our store
   const audioResponse = useAudioResponseStore(state => state.response);
@@ -215,7 +213,7 @@ export function DraggableToolbar() {
     if (!files || files.length === 0) return;
 
     const file = files[0];
-    const maxSize = 200 * 1024 * 1024;
+    const maxSize = 600 * 1024 * 1024;
 
     if (file.size > maxSize) {
       toast.error("File size exceeds the 200MB limit. Please select a smaller file.");
@@ -250,11 +248,12 @@ export function DraggableToolbar() {
   };
 
   // Listen for changes in the store
-  useEffect(() => {
-    if (audioResponse && virtualAssistantRef.current) {
-      virtualAssistantRef.current.updateWithApiResponse(audioResponse);
-    }
-  }, [audioResponse]);
+  // Remove the useEffect that was updating VirtualAssistant
+  // useEffect(() => {
+  //   if (audioResponse && virtualAssistantRef.current) {
+  //     virtualAssistantRef.current.updateWithApiResponse(audioResponse);
+  //   }
+  // }, [audioResponse]);
 
   // Calculate positions - using windowSize state to trigger recalculation on resize
   const popupWidth = Math.min(windowSize.width * 0.8, 1200);
@@ -292,11 +291,7 @@ export function DraggableToolbar() {
       >
         <div className={`h-full w-full  rounded-lg transition-all duration-300 ease-in-out ${isExpanded ? 'opacity-100 scale-90' : 'opacity-0 scale-95'
           }`}>
-          {audioResponse ? (
-            <VirtualAssistant ref={virtualAssistantRef} />
-          ) : (
-            <MedicalInterface liveTranscription={liveTranscription} />
-          )}
+          <MedicalInterface liveTranscription={liveTranscription} />
         </div>
       </div>
 
@@ -386,12 +381,6 @@ export function DraggableToolbar() {
               {isPaused && (
                 <div className="text-[10px] text-orange-600 mt-0.5 font-semibold">PAUSED</div>
               )}
-            </div>
-          )}
-          
-          {isLoading && (
-            <div className="text-xs font-mono mt-1 px-2 py-1 rounded-lg border bg-blue-50 border-blue-300 text-blue-700">
-              LOADING
             </div>
           )}
         </div>

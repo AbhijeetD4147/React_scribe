@@ -10,6 +10,7 @@ import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 import { toast } from "@/components/ui/sonner";
 import { updateFinalizeStatus } from "../services/updateFinalizeStatus";
+import { useAudioResponseStore } from "../services/audioUploadApi";
 
 interface MedicalRecordViewProps {
   soapNotes: any;
@@ -62,6 +63,193 @@ const NoteRenderer = ({ data, searchTerm }: { data: any, searchTerm: string }) =
   }
 
   if (typeof data === 'object') {
+    // Check if this object has direct OD and OS properties (Anterior Segment style)
+    const hasDirectODOS = data.hasOwnProperty('OD') && data.hasOwnProperty('OS');
+    
+    // Check if this object has properties ending with "OD" or "OS" (Posterior Segment style)
+    const odosKeys = Object.keys(data).filter(key => 
+      key.endsWith(' OD') || key.endsWith(' OS') || key === 'OD' || key === 'OS'
+    );
+    
+    const hasIndirectODOS = odosKeys.length > 0;
+    
+    if (hasDirectODOS) {
+      // Handle Anterior Segment style (direct OD/OS structure)
+      const sections: any = {};
+      
+      // Process OD data
+      if (data.OD && typeof data.OD === 'object') {
+        Object.entries(data.OD).forEach(([key, value]) => {
+          if (!sections[key]) {
+            sections[key] = { OD: '', OS: '' };
+          }
+          sections[key].OD = value;
+        });
+      }
+      
+      // Process OS data
+      if (data.OS && typeof data.OS === 'object') {
+        Object.entries(data.OS).forEach(([key, value]) => {
+          if (!sections[key]) {
+            sections[key] = { OD: '', OS: '' };
+          }
+          sections[key].OS = value;
+        });
+      }
+      
+      // Handle other properties that aren't OD/OS
+      const otherProps = Object.entries(data).filter(([key]) => key !== 'OD' && key !== 'OS');
+      
+      return (
+        <div className="space-y-4">
+          {/* Render OD/OS table */}
+          {Object.keys(sections).length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Section</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-semibold">OD</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-semibold">OS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(sections).map(([sectionName, sectionData]: [string, any]) => (
+                    <tr key={sectionName} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-3 py-2 font-medium">
+                        {highlightText(sectionName, searchTerm)}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">
+                        {sectionData?.OD ? (
+                          <NoteRenderer data={sectionData.OD} searchTerm={searchTerm} />
+                        ) : (
+                          <span className="text-gray-500 italic">N/A</span>
+                        )}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">
+                        {sectionData?.OS ? (
+                          <NoteRenderer data={sectionData.OS} searchTerm={searchTerm} />
+                        ) : (
+                          <span className="text-gray-500 italic">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+          
+          {/* Render other properties normally */}
+          {otherProps.length > 0 && (
+            <div className="space-y-1">
+              {otherProps.map(([key, value]) => {
+                const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+                return (
+                  <div key={key} className="text-base text-black">
+                    <span className="font-semibold">{highlightText(formattedKey, searchTerm)}: </span>
+                    <NoteRenderer data={value} searchTerm={searchTerm} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      );
+    } else if (hasIndirectODOS) {
+      // Handle Posterior Segment style (properties ending with OD/OS)
+      const sections: any = {};
+      const otherProps: any = {};
+      
+      Object.entries(data).forEach(([key, value]) => {
+        if (key.endsWith(' OD')) {
+          const sectionName = key.replace(' OD', '');
+          if (!sections[sectionName]) {
+            sections[sectionName] = { OD: '', OS: '' };
+          }
+          sections[sectionName].OD = value;
+        } else if (key.endsWith(' OS')) {
+          const sectionName = key.replace(' OS', '');
+          if (!sections[sectionName]) {
+            sections[sectionName] = { OD: '', OS: '' };
+          }
+          sections[sectionName].OS = value;
+        } else if (key === 'OD') {
+          // Handle single OD property
+          if (!sections['']) {
+            sections[''] = { OD: '', OS: '' };
+          }
+          sections[''].OD = value;
+        } else if (key === 'OS') {
+          // Handle single OS property
+          if (!sections['']) {
+            sections[''] = { OD: '', OS: '' };
+          }
+          sections[''].OS = value;
+        } else {
+          otherProps[key] = value;
+        }
+      });
+      
+      return (
+        <div className="space-y-4">
+          {/* Render other properties first */}
+          {Object.keys(otherProps).length > 0 && (
+            <div className="space-y-1">
+              {Object.entries(otherProps).map(([key, value]) => {
+                const formattedKey = key.replace(/([A-Z])/g, ' $1').replace(/^./, (str) => str.toUpperCase());
+                return (
+                  <div key={key} className="text-base text-black">
+                    <span className="font-semibold">{highlightText(formattedKey, searchTerm)}: </span>
+                    <NoteRenderer data={value} searchTerm={searchTerm} />
+                  </div>
+                );
+              })}
+            </div>
+          )}
+          
+          {/* Render OD/OS table */}
+          {Object.keys(sections).length > 0 && (
+            <div className="overflow-x-auto">
+              <table className="w-full border-collapse border border-gray-300 text-sm">
+                <thead>
+                  <tr className="bg-gray-100">
+                    <th className="border border-gray-300 px-3 py-2 text-left font-semibold">Section</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-semibold">OD</th>
+                    <th className="border border-gray-300 px-3 py-2 text-left font-semibold">OS</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {Object.entries(sections).map(([sectionName, sectionData]: [string, any]) => (
+                    <tr key={sectionName || 'default'} className="hover:bg-gray-50">
+                      <td className="border border-gray-300 px-3 py-2 font-medium">
+                        {sectionName ? highlightText(sectionName, searchTerm) : 'General'}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">
+                        {sectionData?.OD ? (
+                          <NoteRenderer data={sectionData.OD} searchTerm={searchTerm} />
+                        ) : (
+                          <span className="text-gray-500 italic">N/A</span>
+                        )}
+                      </td>
+                      <td className="border border-gray-300 px-3 py-2">
+                        {sectionData?.OS ? (
+                          <NoteRenderer data={sectionData.OS} searchTerm={searchTerm} />
+                        ) : (
+                          <span className="text-gray-500 italic">N/A</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      );
+    }
+
+    // Regular object rendering for non-segment data
     return (
       <div className="space-y-1">
         {Object.entries(data).map(([key, value]) => {
@@ -85,17 +273,38 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
   const [searchTerm, setSearchTerm] = useState('');
   const [isFinalized, setIsFinalized] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+
+  // Get uploaded SOAP notes from store
+  const { formattedSoapNotes, isLoading } = useAudioResponseStore();
+
+  // Create a compatible format for uploaded notes
+  const uploadedSoapForDisplay = useMemo(() => {
+    if (!formattedSoapNotes) return null;
+
+    // Convert the uploaded format to match the expected Table structure
+    const tableData = JSON.stringify(formattedSoapNotes);
+
+    return {
+      Table: [{
+        NOTES: tableData
+      }]
+    };
+  }, [formattedSoapNotes]);
+
+  // Prioritize uploaded notes over patient-selected notes
+  const displaySoapNotes = uploadedSoapForDisplay || soapNotes;
+
   const notes = useMemo(() => {
-    if (!soapNotes?.Table?.[0]?.NOTES) {
+    if (!displaySoapNotes?.Table?.[0]?.NOTES) {
       return null;
     }
     try {
-      return JSON.parse(soapNotes.Table[0].NOTES);
+      return JSON.parse(displaySoapNotes.Table[0].NOTES);
     } catch (error) {
       console.error("Failed to parse SOAP notes:", error);
-      return soapNotes.Table[0].NOTES; // Fallback to raw string
+      return displaySoapNotes.Table[0].NOTES; // Fallback to raw string
     }
-  }, [soapNotes]);
+  }, [displaySoapNotes]);
 
   useEffect(() => {
     if (selectedPatient) {
@@ -369,8 +578,19 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
           <ChevronLeftIcon size={16} />
         </button>
         <div className="p-6 space-y-3" ref={contentRef}>
-          {!soapNotes ? (
-            <div className="p-4 text-center">Loading...</div>
+          {isLoading ? (
+            <div className="flex flex-col items-center justify-center h-full">
+                    <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mb-4"></div>
+                    <h2 className="text-xl font-bold text-center">Generating SOAP Notes</h2>
+                    <p className="text-center mt-2">
+                      It will take couple of seconds to generate SOAP Notes.<br />
+                      Either you can wait or jump straight into new recording.
+                    </p>
+                  </div>
+          ) : !displaySoapNotes ? (
+            <div className="p-4 text-center">
+              Loading...
+            </div>
           ) : (
             <div className="space-y-3">
               {/* Roles Section */}
@@ -777,7 +997,7 @@ export function MedicalRecordView({ soapNotes, selectedPatient, onStatusChange }
             </div>
           )}
         </div>
-      </ScrollArea>
-    </div>
+      </ScrollArea >
+    </div >
   );
 }
